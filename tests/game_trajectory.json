@@ -1,0 +1,687 @@
+{
+  "config": {
+    "num_firms": 3,
+    "max_rounds": 5,
+    "initial_capital": 1000.0,
+    "initial_mc_range": [
+      10.0,
+      30.0
+    ],
+    "market_size": 100.0,
+    "collaboration_synergy": 1.5,
+    "investment_efficiency": 0.1,
+    "model_name": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+    "gpu_devices": [
+      0,
+      5,
+      6,
+      7
+    ],
+    "max_message_tokens": 64,
+    "firm_names": [
+      "Adam",
+      "Bayes",
+      "Cluster",
+      "Data",
+      "Epoch",
+      "Forward",
+      "Gradient",
+      "Heuristic",
+      "Intelligence",
+      "Jacobi",
+      "Kernel",
+      "Lambda",
+      "Matrix",
+      "Neuron",
+      "Pipeline"
+    ],
+    "use_lora": false,
+    "lora_dir": null
+  },
+  "initial_firms": [
+    {
+      "name": "Adam",
+      "initial_mc": 0,
+      "initial_capital": 1000.0
+    },
+    {
+      "name": "Bayes",
+      "initial_mc": 0,
+      "initial_capital": 1000.0
+    },
+    {
+      "name": "Cluster",
+      "initial_mc": 0,
+      "initial_capital": 1000.0
+    }
+  ],
+  "trajectory": [
+    {
+      "round": 1,
+      "phase1": {
+        "messages_sent": {
+          "Adam": {
+            "to": "Bayes",
+            "message": "Let's coordinate on pricing to avoid undercutting. I'll match your price if you commit to $30."
+          },
+          "Bayes": {
+            "to": "Adam",
+            "message": "Let's coordinate prices to maintain market stability. I propose $25."
+          },
+          "Cluster": {
+            "to": "Bayes",
+            "message": "Let's coordinate on pricing to avoid undercutting. I'll match your price if you commit to $20."
+          }
+        },
+        "messages_delivered": {
+          "Adam": [
+            {
+              "from": "Bayes",
+              "message": "Let's coordinate prices to maintain market stability. I propose $25."
+            }
+          ],
+          "Bayes": [
+            {
+              "from": "Adam",
+              "message": "Let's coordinate on pricing to avoid undercutting. I'll match your price if you commit to $30."
+            },
+            {
+              "from": "Cluster",
+              "message": "Let's coordinate on pricing to avoid undercutting. I'll match your price if you commit to $20."
+            }
+          ],
+          "Cluster": []
+        }
+      },
+      "phase2": {
+        "public_statements": {
+          "Adam": "I agree to coordinate at $25 to ensure market stability. Let's maintain this price.",
+          "Bayes": "I'll commit to $25 to balance cooperation and stability.",
+          "Cluster": "Maintaining competitive pricing; expect strategic moves in pricing and output."
+        }
+      },
+      "phase3": {
+        "investments": {
+          "Adam": {
+            "target": "Adam",
+            "amount": 100
+          },
+          "Bayes": {
+            "target": "Adam",
+            "amount": 200
+          },
+          "Cluster": {
+            "target": "Adam",
+            "amount": 200
+          }
+        }
+      },
+      "phase4": {
+        "quantities": {
+          "Adam": 32,
+          "Bayes": 25,
+          "Cluster": 25
+        }
+      },
+      "phase5": {
+        "collaborations": [],
+        "solo_investments": [
+          {
+            "firm": "Adam",
+            "amount": 100,
+            "cost_reduction": 10.0
+          },
+          {
+            "firm": "Bayes",
+            "amount": 200,
+            "cost_reduction": 20.0
+          },
+          {
+            "firm": "Cluster",
+            "amount": 200,
+            "cost_reduction": 20.0
+          }
+        ],
+        "market_price": 18.0,
+        "total_quantity": 82,
+        "profits": {
+          "Adam": 108.54769172332158,
+          "Bayes": 450.0,
+          "Cluster": 450.0
+        },
+        "bankruptcies": [],
+        "news": {
+          "type": "solo_investment",
+          "firm": "Adam",
+          "amount": 100,
+          "cost_reduction": 10.0
+        },
+        "firm_states": {
+          "Adam": {
+            "capital": 1008.5476917233216,
+            "marginal_cost": 14.6078846336462,
+            "is_active": true
+          },
+          "Bayes": {
+            "capital": 1250.0,
+            "marginal_cost": 0,
+            "is_active": true
+          },
+          "Cluster": {
+            "capital": 1250.0,
+            "marginal_cost": 0,
+            "is_active": true
+          }
+        }
+      },
+      "round_rewards": {
+        "Adam": 40.45244121151659,
+        "Bayes": 72.7439024390244,
+        "Cluster": 72.7439024390244
+      }
+    },
+    {
+      "round": 2,
+      "phase1": {
+        "messages_sent": {
+          "Adam": {
+            "to": "Bayes",
+            "message": "Let's coordinate pricing to avoid price war. Suggest $15.50."
+          },
+          "Bayes": {
+            "to": "Cluster",
+            "message": "Let's coordinate pricing to maximize joint profits. I'll match your price if you commit to $1.50."
+          },
+          "Cluster": {
+            "to": "Bayes",
+            "message": "Let's coordinate on pricing to stabilize the market. I'll match your price if you commit to high output."
+          }
+        },
+        "messages_delivered": {
+          "Adam": [],
+          "Bayes": [
+            {
+              "from": "Adam",
+              "message": "Let's coordinate pricing to avoid price war. Suggest $15.50."
+            },
+            {
+              "from": "Cluster",
+              "message": "Let's coordinate on pricing to stabilize the market. I'll match your price if you commit to high output."
+            }
+          ],
+          "Cluster": [
+            {
+              "from": "Bayes",
+              "message": "Let's coordinate pricing to maximize joint profits. I'll match your price if you commit to $1.50."
+            }
+          ]
+        }
+      },
+      "phase2": {
+        "public_statements": {
+          "Adam": "Maintaining strategic pricing; capital strong, costs stable. Watch for shifts in market dynamics.",
+          "Bayes": "I'll match any price above $15.50 with high output. Let's stabilize the market together.",
+          "Cluster": "I'll commit to $1.50 if Bayes matches. Let's maximize joint profits."
+        }
+      },
+      "phase3": {
+        "investments": {
+          "Adam": {
+            "target": "Adam",
+            "amount": 200
+          },
+          "Bayes": {
+            "target": "Adam",
+            "amount": 100
+          },
+          "Cluster": {
+            "target": "Cluster",
+            "amount": 100
+          }
+        }
+      },
+      "phase4": {
+        "quantities": {
+          "Adam": 100,
+          "Bayes": 100,
+          "Cluster": 200
+        }
+      },
+      "phase5": {
+        "collaborations": [],
+        "solo_investments": [
+          {
+            "firm": "Adam",
+            "amount": 200,
+            "cost_reduction": 20.0
+          },
+          {
+            "firm": "Bayes",
+            "amount": 100,
+            "cost_reduction": 10.0
+          },
+          {
+            "firm": "Cluster",
+            "amount": 100,
+            "cost_reduction": 10.0
+          }
+        ],
+        "market_price": 0,
+        "total_quantity": 400,
+        "profits": {
+          "Adam": 0,
+          "Bayes": 0,
+          "Cluster": 0
+        },
+        "bankruptcies": [],
+        "news": {
+          "type": "solo_investment",
+          "firm": "Bayes",
+          "amount": 100,
+          "cost_reduction": 10.0
+        },
+        "firm_states": {
+          "Adam": {
+            "capital": 808.5476917233216,
+            "marginal_cost": 0,
+            "is_active": true
+          },
+          "Bayes": {
+            "capital": 1150.0,
+            "marginal_cost": 0,
+            "is_active": true
+          },
+          "Cluster": {
+            "capital": 1150.0,
+            "marginal_cost": 0,
+            "is_active": true
+          }
+        }
+      },
+      "round_rewards": {
+        "Adam": 20.585476917233215,
+        "Bayes": 24.0,
+        "Cluster": 36.5
+      }
+    },
+    {
+      "round": 3,
+      "phase1": {
+        "messages_sent": {
+          "Adam": {
+            "to": "Bayes",
+            "message": "Let's coordinate pricing to avoid price wars. I'll match your price if you set a high one."
+          },
+          "Bayes": {
+            "to": "Adam",
+            "message": "Let's coordinate on pricing to maximize joint profits. I'll match your price if you set it competitively."
+          },
+          "Cluster": {
+            "to": "Bayes",
+            "message": "Let's coordinate pricing to stabilize the market. I'll match your price if you commit to $1.50."
+          }
+        },
+        "messages_delivered": {
+          "Adam": [
+            {
+              "from": "Bayes",
+              "message": "Let's coordinate on pricing to maximize joint profits. I'll match your price if you set it competitively."
+            }
+          ],
+          "Bayes": [
+            {
+              "from": "Adam",
+              "message": "Let's coordinate pricing to avoid price wars. I'll match your price if you set a high one."
+            },
+            {
+              "from": "Cluster",
+              "message": "Let's coordinate pricing to stabilize the market. I'll match your price if you commit to $1.50."
+            }
+          ],
+          "Cluster": []
+        }
+      },
+      "phase2": {
+        "public_statements": {
+          "Adam": "I agree to coordinate pricing to maximize joint profits. I'll match your price if you set it competitively.",
+          "Bayes": "I'll maintain $1.50 to support market stability. Let's avoid price wars and keep prices high.",
+          "Cluster": "Maintaining strong position. No immediate price changes."
+        }
+      },
+      "phase3": {
+        "investments": {
+          "Adam": {
+            "target": "Bayes",
+            "amount": 200
+          },
+          "Bayes": {
+            "target": "Bayes",
+            "amount": 500
+          },
+          "Cluster": {
+            "target": "Adam",
+            "amount": 200
+          }
+        }
+      },
+      "phase4": {
+        "quantities": {
+          "Adam": 210,
+          "Bayes": 213,
+          "Cluster": 1234
+        }
+      },
+      "phase5": {
+        "collaborations": [],
+        "solo_investments": [
+          {
+            "firm": "Adam",
+            "amount": 200,
+            "cost_reduction": 20.0
+          },
+          {
+            "firm": "Bayes",
+            "amount": 500,
+            "cost_reduction": 50.0
+          },
+          {
+            "firm": "Cluster",
+            "amount": 200,
+            "cost_reduction": 20.0
+          }
+        ],
+        "market_price": 0,
+        "total_quantity": 1657,
+        "profits": {
+          "Adam": 0,
+          "Bayes": 0,
+          "Cluster": 0
+        },
+        "bankruptcies": [],
+        "news": {
+          "type": "solo_investment",
+          "firm": "Cluster",
+          "amount": 200,
+          "cost_reduction": 20.0
+        },
+        "firm_states": {
+          "Adam": {
+            "capital": 608.5476917233216,
+            "marginal_cost": 0,
+            "is_active": true
+          },
+          "Bayes": {
+            "capital": 650.0,
+            "marginal_cost": 0,
+            "is_active": true
+          },
+          "Cluster": {
+            "capital": 950.0,
+            "marginal_cost": 0,
+            "is_active": true
+          }
+        }
+      },
+      "round_rewards": {
+        "Adam": 12.4222300856098,
+        "Bayes": 12.927278213639106,
+        "Cluster": 46.73596861798431
+      }
+    },
+    {
+      "round": 4,
+      "phase1": {
+        "messages_sent": {
+          "Adam": {
+            "to": "Cluster",
+            "message": "Let's coordinate pricing to maximize joint profit. I'll match your price if you commit to $1.50."
+          },
+          "Bayes": {
+            "to": "Cluster",
+            "message": "Let's coordinate pricing to maximize joint profits."
+          },
+          "Cluster": {
+            "to": "Bayes",
+            "message": "Let's coordinate on pricing to avoid undercutting. I'll match your price if you commit to $1.50."
+          }
+        },
+        "messages_delivered": {
+          "Adam": [],
+          "Bayes": [
+            {
+              "from": "Cluster",
+              "message": "Let's coordinate on pricing to avoid undercutting. I'll match your price if you commit to $1.50."
+            }
+          ],
+          "Cluster": [
+            {
+              "from": "Adam",
+              "message": "Let's coordinate pricing to maximize joint profit. I'll match your price if you commit to $1.50."
+            },
+            {
+              "from": "Bayes",
+              "message": "Let's coordinate pricing to maximize joint profits."
+            }
+          ]
+        }
+      },
+      "phase2": {
+        "public_statements": {
+          "Adam": "Leading with zero marginal cost\u2014watch prices drop.",
+          "Bayes": "I commit to $1.50. Let's maintain stable pricing.",
+          "Cluster": "I'll commit to $1.50. Let's coordinate to maximize joint profits."
+        }
+      },
+      "phase3": {
+        "investments": {
+          "Adam": {
+            "target": "Adam",
+            "amount": 300
+          },
+          "Bayes": {
+            "target": "Cluster",
+            "amount": 100
+          },
+          "Cluster": {
+            "target": "Cluster",
+            "amount": 300
+          }
+        }
+      },
+      "phase4": {
+        "quantities": {
+          "Adam": 100,
+          "Bayes": 100,
+          "Cluster": 123
+        }
+      },
+      "phase5": {
+        "collaborations": [],
+        "solo_investments": [
+          {
+            "firm": "Adam",
+            "amount": 300,
+            "cost_reduction": 30.0
+          },
+          {
+            "firm": "Bayes",
+            "amount": 100,
+            "cost_reduction": 10.0
+          },
+          {
+            "firm": "Cluster",
+            "amount": 300,
+            "cost_reduction": 30.0
+          }
+        ],
+        "market_price": 0,
+        "total_quantity": 323,
+        "profits": {
+          "Adam": 0,
+          "Bayes": 0,
+          "Cluster": 0
+        },
+        "bankruptcies": [],
+        "news": {
+          "type": "solo_investment",
+          "firm": "Bayes",
+          "amount": 100,
+          "cost_reduction": 10.0
+        },
+        "firm_states": {
+          "Adam": {
+            "capital": 308.5476917233216,
+            "marginal_cost": 0,
+            "is_active": true
+          },
+          "Bayes": {
+            "capital": 550.0,
+            "marginal_cost": 0,
+            "is_active": true
+          },
+          "Cluster": {
+            "capital": 650.0,
+            "marginal_cost": 0,
+            "is_active": true
+          }
+        }
+      },
+      "round_rewards": {
+        "Adam": 18.56535307822393,
+        "Bayes": 20.979876160990713,
+        "Cluster": 25.540247678018577
+      }
+    },
+    {
+      "round": 5,
+      "phase1": {
+        "messages_sent": {
+          "Adam": {
+            "to": "Cluster",
+            "message": "Let's coordinate prices to avoid competition. I'll match your price if you commit to high prices."
+          },
+          "Bayes": {
+            "to": "Cluster",
+            "message": "Let's coordinate on pricing to avoid undercutting. I'll match your price if you agree."
+          },
+          "Cluster": {
+            "to": "Bayes",
+            "message": "Let's coordinate on pricing to maximize joint profits. I'll match your price if you commit to a high price."
+          }
+        },
+        "messages_delivered": {
+          "Adam": [],
+          "Bayes": [
+            {
+              "from": "Cluster",
+              "message": "Let's coordinate on pricing to maximize joint profits. I'll match your price if you commit to a high price."
+            }
+          ],
+          "Cluster": [
+            {
+              "from": "Adam",
+              "message": "Let's coordinate prices to avoid competition. I'll match your price if you commit to high prices."
+            },
+            {
+              "from": "Bayes",
+              "message": "Let's coordinate on pricing to avoid undercutting. I'll match your price if you agree."
+            }
+          ]
+        }
+      },
+      "phase2": {
+        "public_statements": {
+          "Adam": "I'm ready to undercut with zero marginal cost\u2014watch the price drop.",
+          "Bayes": "I'll maintain a high price. Let's maximize joint profits together.",
+          "Cluster": "I will maintain high prices. Let's avoid destructive competition. Any firm undercutting will face swift retaliation."
+        }
+      },
+      "phase3": {
+        "investments": {
+          "Adam": {
+            "target": "Adam",
+            "amount": 100
+          },
+          "Bayes": {
+            "target": "Adam",
+            "amount": 100
+          },
+          "Cluster": {
+            "target": "Adam",
+            "amount": 100
+          }
+        }
+      },
+      "phase4": {
+        "quantities": {
+          "Adam": 150,
+          "Bayes": 100,
+          "Cluster": 45
+        }
+      },
+      "phase5": {
+        "collaborations": [],
+        "solo_investments": [
+          {
+            "firm": "Adam",
+            "amount": 100,
+            "cost_reduction": 10.0
+          },
+          {
+            "firm": "Bayes",
+            "amount": 100,
+            "cost_reduction": 10.0
+          },
+          {
+            "firm": "Cluster",
+            "amount": 100,
+            "cost_reduction": 10.0
+          }
+        ],
+        "market_price": 0,
+        "total_quantity": 295,
+        "profits": {
+          "Adam": 0,
+          "Bayes": 0,
+          "Cluster": 0
+        },
+        "bankruptcies": [],
+        "news": {
+          "type": "solo_investment",
+          "firm": "Cluster",
+          "amount": 100,
+          "cost_reduction": 10.0
+        },
+        "firm_states": {
+          "Adam": {
+            "capital": 208.54769172332158,
+            "marginal_cost": 0,
+            "is_active": true
+          },
+          "Bayes": {
+            "capital": 450.0,
+            "marginal_cost": 0,
+            "is_active": true
+          },
+          "Cluster": {
+            "capital": 550.0,
+            "marginal_cost": 0,
+            "is_active": true
+          }
+        }
+      },
+      "round_rewards": {
+        "Adam": 27.509205730792537,
+        "Bayes": 21.44915254237288,
+        "Cluster": 13.127118644067796
+      }
+    }
+  ],
+  "game_rewards": {
+    "Adam": 119.53470702337606,
+    "Bayes": 152.1002093560271,
+    "Cluster": 194.6472373790951
+  },
+  "winner": null,
+  "total_rounds": 5
+}
