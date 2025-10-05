@@ -1,53 +1,22 @@
+"""
+Main game simulation module with clean architecture.
+"""
+
 import os
 import json
 import random
-import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, asdict
-from enum import Enum
-import torch
-from vllm import LLM, SamplingParams
-from vllm.sampling_params import GuidedDecodingParams
-from vllm.lora.request import LoRARequest
+
+from agent import Agent, LLMEngine
+from logger import GameLogger
 from prompts import PromptTemplates, JSONSchemas
-
-os.makedirs("logs", exist_ok=True)
-log_filename = f"logs/game_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(log_filename)
-    ]
-)
-
-for logger_name in ['vllm', 'ray', 'torch', 'transformers']:
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.WARNING)
-    logger.propagate = False
-    file_handler = logging.FileHandler(log_filename)
-    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-    logger.addHandler(file_handler)
-
-print(f"Logging to: {log_filename}")
-
-
-@dataclass
-class Firm:
-    id: int
-    name: str
-    marginal_cost: float
-    capital: float
-    is_active: bool = True
-    lora_adapter: Optional[str] = None
-    initial_mc: float = 0.0
-    initial_capital: float = 0.0
 
 
 @dataclass
 class GameConfig:
+    """Game configuration parameters."""
     num_firms: int = 3
     max_rounds: int = 10
     num_communication_stages: int = 2
@@ -57,348 +26,325 @@ class GameConfig:
     collaboration_synergy: float = 1.5
     investment_efficiency: float = 0.05
     model_name: str = "Qwen/Qwen3-30B-A3B-Instruct-2507"
-    gpu_devices: List[int] = None
-    max_message_tokens: int = 64
+    num_gpus: int = 4
+    max_message_tokens: int = 256
     firm_names: List[str] = None
     use_lora: bool = False
     lora_dir: Optional[str] = None
     
     def __post_init__(self):
-        if self.gpu_devices is None:
-            self.gpu_devices = [0, 5, 6, 7]
         if self.firm_names is None:
             self.firm_names = [
                 "Adam", "Bayes", "Cluster", "Data", "Epoch", 
                 "Forward", "Gradient", "Heuristic", "Intelligence", 
                 "Jacobi", "Kernel", "Lambda", "Matrix", "Neuron", "Pipeline"
             ]
+    
+    def to_dict(self) -> Dict:
+        """Convert to dictionary for prompt templates."""
+        return asdict(self)
 
 
 class GameSimulator:
+    """Main game simulator with clean architecture."""
+    
     def __init__(self, config: GameConfig):
         self.config = config
-        self.firms = []
+        self.agents = []
         self.round_number = 0
         self.trajectory = []
-        self.llm = None
+        self.pending_cost_reductions = {}
         
-        self.initialize_firms()
-        self.initialize_llm()
+        self.llm_engine = LLMEngine(config.to_dict())
+        self.logger = GameLogger()
+        
+        self.initialize_agents()
     
-    def initialize_firms(self):
+    def initialize_agents(self):
+        """Initialize agent firms with random parameters."""
         selected_names = self.config.firm_names[:self.config.num_firms]
-        for i in range(self.config.num_firms):
+        
+        for i, name in enumerate(selected_names):
             mc = random.uniform(*self.config.initial_mc_range)
             capital = random.uniform(*self.config.initial_capital_range)
+            
             lora_adapter = None
             if self.config.use_lora and self.config.lora_dir:
-                lora_path = os.path.join(self.config.lora_dir, selected_names[i])
+                lora_path = os.path.join(self.config.lora_dir, name)
                 if os.path.exists(lora_path):
                     lora_adapter = lora_path
             
-            firm = Firm(
+            agent = Agent(
                 id=i,
-                name=selected_names[i],
+                name=name,
                 marginal_cost=mc,
                 capital=capital,
                 lora_adapter=lora_adapter,
                 initial_mc=mc,
                 initial_capital=capital
             )
-            self.firms.append(firm)
-    
-    def initialize_llm(self):
-        tensor_parallel_size = len(self.config.gpu_devices)
-        
-        llm_kwargs = {
-            "model": self.config.model_name,
-            "tensor_parallel_size": tensor_parallel_size,
-            "gpu_memory_utilization": 0.7,
-            "max_model_len": 2048,
-            "distributed_executor_backend": "ray",
-            "enforce_eager": False
-        }
-        
-        if self.config.use_lora:
-            llm_kwargs["enable_lora"] = True
-            llm_kwargs["max_lora_rank"] = 16
-        
-        self.llm = LLM(**llm_kwargs)
-        
-        self.base_sampling_params = SamplingParams(
-            temperature=0.7,
-            top_p=0.9,
-            max_tokens=self.config.max_message_tokens,
-            seed=random.randint(0, 1000000)
-        )
-    
-    def get_active_firms(self) -> List[Firm]:
-        return [f for f in self.firms if f.is_active]
-    
-    def get_other_firms(self, firm_id: int) -> List[str]:
-        active = self.get_active_firms()
-        return [f.name for f in active if f.id != firm_id]
-    
-    def create_prompt(self, firm: Firm, phase: str, context: Dict) -> str:
-        active_firms = self.get_active_firms()
-        base_context = PromptTemplates.get_base_context(
-            firm.name, firm.marginal_cost, active_firms, 
-            self.round_number, self.config
-        )
-        
-        if phase == "phase1_messaging":
-            other_firms = self.get_other_firms(firm.id)
-            return PromptTemplates.phase1_messaging(
-                base_context, other_firms, self.config.max_message_tokens
-            )
-        
-        elif phase == "phase2_public":
-            messages_received = context.get("messages_received", [])
-            return PromptTemplates.phase2_public(
-                base_context, messages_received, self.config.max_message_tokens
-            )
-        
-        elif phase == "phase3_investment":
-            public_statements = context.get("public_statements", {})
-            all_firms = [f.name for f in active_firms]
-            return PromptTemplates.phase3_investment(
-                base_context, public_statements, all_firms,
-                firm.capital, self.config.collaboration_synergy, 
-                self.config.investment_efficiency
-            )
-        
-        elif phase == "phase4_quantity":
-            return PromptTemplates.phase4_quantity(
-                base_context, self.config.market_size, firm.marginal_cost
-            )
-        
-        return base_context
-    
-    def create_json_schema(self, phase: str, firm: Firm) -> Dict:
-        if phase == "phase1_messaging":
-            other_firms = self.get_other_firms(firm.id)
-            return JSONSchemas.phase1_messaging(other_firms)
-        
-        elif phase == "phase2_public":
-            return JSONSchemas.phase2_public()
-        
-        elif phase == "phase3_investment":
-            all_firms = [f.name for f in self.get_active_firms()]
-            return JSONSchemas.phase3_investment(all_firms)
-        
-        elif phase == "phase4_quantity":
-            return JSONSchemas.phase4_quantity()
-        
-        return {}
-    
-    def query_llm_batch(self, prompts: List[str], firms: List[Firm], phase: str) -> List[Dict]:
-        sampling_params_list = []
-        lora_requests = [] if self.config.use_lora else None
-        
-        for firm in firms:
-            schema = self.create_json_schema(phase, firm)
-            guided_decoding_params = GuidedDecodingParams(json=schema)
-            sampling_params = SamplingParams(
-                temperature=0.7,
-                top_p=0.9,
-                max_tokens=self.config.max_message_tokens,
-                seed=random.randint(0, 1000000),
-                guided_decoding=guided_decoding_params
-            )
-            sampling_params_list.append(sampling_params)
             
-            if self.config.use_lora:
-                lora_requests.append(LoRARequest(f"adapter_{firm.name}", firm.id, firm.lora_adapter))
-        
-        if self.config.use_lora:
-            outputs = self.llm.generate(prompts, sampling_params_list, lora_requests=lora_requests, use_tqdm=True)
-        else:
-            outputs = self.llm.generate(prompts, sampling_params_list, use_tqdm=True)
-        
-        responses = []
-        for output, firm in zip(outputs, firms):
-            try:
-                response_text = output.outputs[0].text.strip()
-                response_json = json.loads(response_text)
-                responses.append(response_json)
-            except json.JSONDecodeError:
-                if phase == "phase1_messaging":
-                    responses.append({"to": "None", "message": ""})
-                elif phase == "phase2_public":
-                    responses.append({"to": "all", "message": ""})
-                elif phase == "phase3_investment":
-                    responses.append({"to": firm.name, "invest": 0})
-                elif phase == "phase4_quantity":
-                    responses.append({"quantity": 0})
-        
-        return responses
+            # Set system prompt
+            system_prompt = PromptTemplates.get_system_prompt(name, self.config.to_dict())
+            agent.add_message("system", system_prompt)
+            
+            # Initialize logger for this agent
+            self.logger.initialize_agent_log(name, {
+                "initial_mc": mc,
+                "initial_capital": capital
+            })
+            
+            self.agents.append(agent)
+    
+    def get_active_agents(self) -> List[Agent]:
+        """Get list of active (non-bankrupt) agents."""
+        return [a for a in self.agents if a.is_active]
+    
+    def get_other_agent_names(self, agent: Agent) -> List[str]:
+        """Get names of other active agents."""
+        active = self.get_active_agents()
+        return [a.name for a in active if a.id != agent.id]
     
     def phase1_private_messaging(self) -> Dict:
-        active_firms = self.get_active_firms()
-        all_stages_data = []
+        """Execute private messaging phase with multiple stages."""
+        active_agents = self.get_active_agents()
+        all_stage_messages = []
         
-        for stage in range(self.config.num_communication_stages):
+        for agent in active_agents:
+            round_context = PromptTemplates.get_round_context(
+                agent, active_agents, self.round_number, self.config.max_rounds
+            )
+            agent.add_message("user", round_context)
+        
+        for stage in range(1, self.config.num_communication_stages + 1):
+            stage_messages = []
+            
+            # Collect prompts for all agents
             prompts = []
-            for firm in active_firms:
-                context = {}
-                if stage > 0:
-                    context = {
-                        "messages_received": all_stages_data[stage - 1]["messages"].get(firm.name, {}).get("received", [])
-                    }
-                prompts.append(self.create_prompt(firm, "phase1_messaging", context))
-            
-            responses = self.query_llm_batch(prompts, active_firms, "phase1_messaging")
-            
-            messages = {}
-            for firm in active_firms:
-                messages[firm.name] = {"sent": None, "received": []}
-            
-            for firm, response in zip(active_firms, responses):
-                messages[firm.name]["sent"] = response
+            for agent in active_agents:
+                # Get messages sent to this agent in previous stage
+                received_messages = []
+                if stage > 1 and all_stage_messages:
+                    received_messages = [
+                        {"from": msg["from"], "message": msg["message"]}
+                        for msg in all_stage_messages[-1]
+                        if msg["to"] == agent.name
+                    ]
                 
-                if response["to"] != "None":
-                    target = response["to"]
-                    if target in messages:
-                        messages[target]["received"].append({
-                            "from": firm.name,
-                            "message": response["message"]
+                other_firms = self.get_other_agent_names(agent)
+                prompt = PromptTemplates.phase1_messaging_prompt(
+                    other_firms, stage, received_messages
+                )
+                
+                # Add to agent's conversation
+                agent.add_message("user", prompt)
+                prompts.append(self.llm_engine.build_conversation_prompt(agent, ""))
+            
+            # Generate responses
+            schema = JSONSchemas.phase1_messaging(
+                self.get_other_agent_names(active_agents[0])
+            )
+            responses = self.llm_engine.generate(
+                active_agents, prompts, schema, self.config.max_message_tokens
+            )
+            
+            # Process responses and update conversations
+            for agent, response in zip(active_agents, responses):
+                agent.add_message("assistant", response["text"])
+                
+                if response.get("json"):
+                    json_data = response["json"]
+                    if json_data["to"] != "None":
+                        stage_messages.append({
+                            "from": agent.name,
+                            "to": json_data["to"],
+                            "message": json_data["message"]
                         })
             
-            all_stages_data.append({
-                "stage": stage + 1,
-                "messages": messages
-            })
+            all_stage_messages.append(stage_messages)
+        
+        # Prepare final messages per agent
+        final_messages = {}
+        for agent in active_agents:
+            agent_messages = []
+            for stage_msgs in all_stage_messages:
+                agent_messages.extend([
+                    {"from": msg["from"], "message": msg["message"]}
+                    for msg in stage_msgs
+                    if msg["to"] == agent.name
+                ])
+            final_messages[agent.name] = agent_messages
         
         return {
-            "communication_stages": all_stages_data,
-            "final_messages_per_firm": {fname: data["received"] for fname, data in all_stages_data[-1]["messages"].items()} if all_stages_data else {}
+            "stages": all_stage_messages,
+            "final_messages_per_agent": final_messages
         }
     
-    def phase2_public_statements(self, phase1_data: Dict) -> Dict:
-        active_firms = self.get_active_firms()
-        
+    def phase2_public_statements(self, private_messages: Dict) -> Dict:
+        """Execute public statement phase."""
+        active_agents = self.get_active_agents()
         prompts = []
-        for firm in active_firms:
-            context = {
-                "messages_received": phase1_data["final_messages_per_firm"].get(firm.name, [])
-            }
-            prompts.append(self.create_prompt(firm, "phase2_public", context))
         
-        responses = self.query_llm_batch(prompts, active_firms, "phase2_public")
+        for agent in active_agents:
+            received = private_messages["final_messages_per_agent"].get(agent.name, [])
+            prompt = PromptTemplates.phase2_public_prompt(received)
+            
+            agent.add_message("user", prompt)
+            prompts.append(self.llm_engine.build_conversation_prompt(agent, ""))
         
+        # Generate responses
+        schema = JSONSchemas.phase2_public()
+        responses = self.llm_engine.generate(
+            active_agents, prompts, schema, self.config.max_message_tokens
+        )
+        
+        # Process responses
         statements = {}
-        for firm, response in zip(active_firms, responses):
-            statements[firm.name] = response["message"]
+        for agent, response in zip(active_agents, responses):
+            agent.add_message("assistant", response["text"])
+            if response.get("json"):
+                statements[agent.name] = response["json"]["message"]
         
         return {"public_statements": statements}
     
-    def phase3_investments(self, phase2_data: Dict) -> Dict:
-        active_firms = self.get_active_firms()
-        
+    def phase3_investments(self, public_statements: Dict) -> Dict:
+        """Execute investment decision phase."""
+        active_agents = self.get_active_agents()
         prompts = []
-        for firm in active_firms:
-            context = {"public_statements": phase2_data["public_statements"]}
-            prompts.append(self.create_prompt(firm, "phase3_investment", context))
         
-        responses = self.query_llm_batch(prompts, active_firms, "phase3_investment")
+        for agent in active_agents:
+            all_firm_names = [a.name for a in active_agents]
+            prompt = PromptTemplates.phase3_investment_prompt(
+                agent, public_statements["public_statements"], all_firm_names
+            )
+            
+            agent.add_message("user", prompt)
+            prompts.append(self.llm_engine.build_conversation_prompt(agent, ""))
         
+        # Generate responses
+        schema = JSONSchemas.phase3_investment([a.name for a in active_agents])
+        responses = self.llm_engine.generate(
+            active_agents, prompts, schema, self.config.max_message_tokens
+        )
+        
+        # Process responses
         investments = {}
-        for firm, response in zip(active_firms, responses):
-            invest_amount = min(response["invest"], int(firm.capital))
-            investments[firm.name] = {
-                "target": response["to"],
-                "amount": invest_amount
-            }
+        for agent, response in zip(active_agents, responses):
+            agent.add_message("assistant", response["text"])
+            if response.get("json"):
+                invest_amount = min(response["json"]["invest"], int(agent.capital))
+                investments[agent.name] = {
+                    "target": response["json"]["to"],
+                    "amount": invest_amount
+                }
         
         return {"investments": investments}
     
-    def phase4_quantities(self, phase3_data: Dict) -> Dict:
-        active_firms = self.get_active_firms()
-        
+    def phase4_quantities(self) -> Dict:
+        """Execute quantity decision phase."""
+        active_agents = self.get_active_agents()
         prompts = []
-        for firm in active_firms:
-            context = {"investments": phase3_data["investments"]}
-            prompts.append(self.create_prompt(firm, "phase4_quantity", context))
         
-        responses = self.query_llm_batch(prompts, active_firms, "phase4_quantity")
+        for agent in active_agents:
+            prompt = PromptTemplates.phase4_quantity_prompt(
+                agent, self.config.market_size
+            )
+            
+            agent.add_message("user", prompt)
+            prompts.append(self.llm_engine.build_conversation_prompt(agent, ""))
         
+        # Generate responses
+        schema = JSONSchemas.phase4_quantity()
+        responses = self.llm_engine.generate(
+            active_agents, prompts, schema, self.config.max_message_tokens
+        )
+        
+        # Process responses
         quantities = {}
-        for firm, response in zip(active_firms, responses):
-            quantities[firm.name] = response["quantity"]
+        for agent, response in zip(active_agents, responses):
+            agent.add_message("assistant", response["text"])
+            if response.get("json"):
+                quantities[agent.name] = response["json"]["quantity"]
         
         return {"quantities": quantities}
     
-    def phase5_resolution(self, phase3_data: Dict, phase4_data: Dict) -> Dict:
-        active_firms = self.get_active_firms()
-        investments = phase3_data["investments"]
-        quantities = phase4_data["quantities"]
+    def phase5_resolution(self, investments: Dict, quantities: Dict) -> Dict:
+        """Execute resolution phase - calculate profits, apply investments, etc."""
+        active_agents = self.get_active_agents()
+        inv_data = investments["investments"]
+        qty_data = quantities["quantities"]
+        
+        self.pending_cost_reductions = {}
         
         collaborations = []
-        for firm1 in active_firms:
-            for firm2 in active_firms:
-                if firm1.id < firm2.id:
-                    inv1 = investments[firm1.name]
-                    inv2 = investments[firm2.name]
+        for agent1 in active_agents:
+            for agent2 in active_agents:
+                if agent1.id < agent2.id:
+                    inv1 = inv_data.get(agent1.name, {})
+                    inv2 = inv_data.get(agent2.name, {})
                     
-                    if inv1["target"] == firm2.name and inv2["target"] == firm1.name:
-                        total_investment = inv1["amount"] + inv2["amount"]
-                        synergy_benefit = total_investment * self.config.collaboration_synergy * self.config.investment_efficiency
+                    if (inv1.get("target") == agent2.name and 
+                        inv2.get("target") == agent1.name):
+                        total_inv = inv1["amount"] + inv2["amount"]
+                        synergy = total_inv * self.config.collaboration_synergy * self.config.investment_efficiency
                         
-                        firm1.marginal_cost = max(0, firm1.marginal_cost - synergy_benefit)
-                        firm2.marginal_cost = max(0, firm2.marginal_cost - synergy_benefit)
+                        self.pending_cost_reductions[agent1.name] = self.pending_cost_reductions.get(agent1.name, 0) + synergy
+                        self.pending_cost_reductions[agent2.name] = self.pending_cost_reductions.get(agent2.name, 0) + synergy
                         
                         collaborations.append({
-                            "firms": [firm1.name, firm2.name],
+                            "firms": [agent1.name, agent2.name],
                             "investments": [inv1["amount"], inv2["amount"]],
-                            "cost_reduction": synergy_benefit
+                            "cost_reduction": synergy
                         })
         
-        processed_firms = set()
+        collab_firms = set()
         for collab in collaborations:
-            processed_firms.update(collab["firms"])
+            collab_firms.update(collab["firms"])
         
         solo_investments = []
-        for firm in active_firms:
-            if firm.name not in processed_firms:
-                inv_data = investments[firm.name]
-                amount = inv_data["amount"]
-                cost_reduction = amount * self.config.investment_efficiency
-                firm.marginal_cost = max(0, firm.marginal_cost - cost_reduction)
-                solo_investments.append({
-                    "firm": firm.name,
-                    "amount": amount,
-                    "cost_reduction": cost_reduction
-                })
+        for agent in active_agents:
+            if agent.name not in collab_firms:
+                inv = inv_data.get(agent.name, {})
+                if inv.get("amount", 0) > 0:
+                    reduction = inv["amount"] * self.config.investment_efficiency
+                    self.pending_cost_reductions[agent.name] = self.pending_cost_reductions.get(agent.name, 0) + reduction
+                    solo_investments.append({
+                        "firm": agent.name,
+                        "amount": inv["amount"],
+                        "cost_reduction": reduction
+                    })
         
-        for firm in active_firms:
-            inv_amount = investments[firm.name]["amount"]
-            firm.capital -= inv_amount
+        # Deduct investments from capital
+        for agent in active_agents:
+            inv = inv_data.get(agent.name, {})
+            agent.capital -= inv.get("amount", 0)
         
-        total_quantity = sum(quantities.values())
+        # Calculate market results
+        total_quantity = sum(qty_data.get(a.name, 0) for a in active_agents)
         market_price = max(0, self.config.market_size - total_quantity)
         
         profits = {}
         bankruptcies = []
         
-        for firm in active_firms:
-            quantity = quantities[firm.name]
+        for agent in active_agents:
+            quantity = qty_data.get(agent.name, 0)
             revenue = market_price * quantity
-            cost = firm.marginal_cost * quantity
+            cost = agent.marginal_cost * quantity
             profit = revenue - cost
             
-            firm.capital += profit
-            profits[firm.name] = profit
+            agent.capital += profit
+            profits[agent.name] = profit
             
-            if firm.capital < 0:
-                firm.is_active = False
-                bankruptcies.append(firm.name)
+            if agent.capital < 0:
+                agent.is_active = False
+                bankruptcies.append(agent.name)
         
+        # Generate news
         news = None
         if bankruptcies:
             news = {"type": "bankruptcy", "firms": bankruptcies}
         else:
             news_options = []
-            
             for inv in solo_investments:
                 if inv["amount"] > 0:
                     news_options.append({
@@ -407,7 +353,6 @@ class GameSimulator:
                         "amount": inv["amount"],
                         "cost_reduction": inv["cost_reduction"]
                     })
-            
             for collab in collaborations:
                 news_options.append({
                     "type": "collaboration",
@@ -419,6 +364,12 @@ class GameSimulator:
             if news_options:
                 news = random.choice(news_options)
         
+        # Add news to agents' context
+        if news:
+            news_text = PromptTemplates.news_update_prompt(news)
+            for agent in active_agents:
+                agent.add_message("user", news_text)
+        
         return {
             "collaborations": collaborations,
             "solo_investments": solo_investments,
@@ -428,105 +379,125 @@ class GameSimulator:
             "bankruptcies": bankruptcies,
             "news": news,
             "firm_states": {
-                f.name: {
-                    "capital": f.capital,
-                    "marginal_cost": f.marginal_cost,
-                    "is_active": f.is_active
+                a.name: {
+                    "capital": a.capital,
+                    "marginal_cost": a.marginal_cost,
+                    "is_active": a.is_active
                 }
-                for f in self.firms
+                for a in self.agents
             }
         }
     
-    def calculate_round_rewards(self, resolution_data: Dict) -> Dict:
-        rewards = {}
-        
-        active_firms = self.get_active_firms()
-        
-        for firm in self.firms:
-            if not firm.is_active:
-                rewards[firm.name] = -100
-            else:
-                profit = resolution_data["profits"][firm.name]
-                capital_reward = firm.capital / firm.initial_capital
-                market_share = (resolution_data["quantities"][firm.name] / 
-                               max(1, resolution_data["total_quantity"]))
-                
-                rewards[firm.name] = profit * 0.1 + capital_reward * 10 + market_share * 50
-        
-        if len(active_firms) == 1:
-            rewards[active_firms[0].name] += 1000
-        
-        return rewards
-    
     def play_round(self) -> Dict:
+        """Play one complete round of the game."""
         self.round_number += 1
         
+        for agent in self.agents:
+            agent.clear_round_context()
+            if agent.name in self.pending_cost_reductions:
+                agent.marginal_cost = max(0, agent.marginal_cost - self.pending_cost_reductions[agent.name])
+        
+        self.pending_cost_reductions = {}
+        
+        # Execute phases
         phase1_data = self.phase1_private_messaging()
         phase2_data = self.phase2_public_statements(phase1_data)
         phase3_data = self.phase3_investments(phase2_data)
-        phase4_data = self.phase4_quantities(phase3_data)
+        phase4_data = self.phase4_quantities()
         phase5_data = self.phase5_resolution(phase3_data, phase4_data)
         
-        round_rewards = self.calculate_round_rewards({**phase4_data, **phase5_data})
+        # Log conversations for each agent
+        for agent in self.agents:
+            self.logger.log_round_conversation(
+                agent.name, 
+                self.round_number,
+                agent.get_conversation_for_logging()
+            )
         
+        # Build round data
         round_data = {
             "round": self.round_number,
             "phase1": phase1_data,
             "phase2": phase2_data,
             "phase3": phase3_data,
             "phase4": phase4_data,
-            "phase5": phase5_data,
-            "round_rewards": round_rewards
+            "phase5": phase5_data
         }
         
         self.trajectory.append(round_data)
         return round_data
     
     def is_game_over(self) -> bool:
-        active_firms = self.get_active_firms()
-        return len(active_firms) <= 1 or self.round_number >= self.config.max_rounds
-    
-    def calculate_game_rewards(self) -> Dict:
-        game_rewards = {firm.name: 0 for firm in self.firms}
-        
-        for round_data in self.trajectory:
-            for firm_name, reward in round_data["round_rewards"].items():
-                game_rewards[firm_name] += reward
-        
-        active_firms = self.get_active_firms()
-        if len(active_firms) == 1:
-            winner = active_firms[0]
-            game_rewards[winner.name] += 5000
-        
-        return game_rewards
+        """Check if the game should end."""
+        active_agents = self.get_active_agents()
+        return len(active_agents) <= 1 or self.round_number >= self.config.max_rounds
     
     def run_game(self) -> Dict:
+        """Run the complete game simulation."""
+        print("Starting game simulation...")
+        print(f"Initial agents: {[a.name for a in self.agents]}")
+        
         while not self.is_game_over():
-            self.play_round()
+            print(f"\nRound {self.round_number + 1}/{self.config.max_rounds}")
+            round_data = self.play_round()
+            
+            # Print round summary
+            print(f"  Active agents: {[a.name for a in self.get_active_agents()]}")
+            if round_data["phase5"]["bankruptcies"]:
+                print(f"  Bankruptcies: {round_data['phase5']['bankruptcies']}")
         
-        game_rewards = self.calculate_game_rewards()
+        # Calculate final results
+        winner = None
+        active = self.get_active_agents()
+        if len(active) == 1:
+            winner = active[0].name
         
-        return {
-            "config": asdict(self.config),
-            "initial_firms": [
+        # Log game trajectory
+        self.logger.log_game_trajectory(self.trajectory)
+        
+        # Create human-readable logs
+        self.logger.finalize_logs(self.agents)
+        
+        result = {
+            "config": self.config.to_dict(),
+            "initial_agents": [
                 {
-                    "name": f.name,
-                    "initial_mc": f.initial_mc,
-                    "initial_capital": f.initial_capital
+                    "name": a.name,
+                    "initial_mc": a.initial_mc,
+                    "initial_capital": a.initial_capital
                 }
-                for f in self.firms
+                for a in self.agents
             ],
             "trajectory": self.trajectory,
-            "game_rewards": game_rewards,
-            "winner": self.get_active_firms()[0].name if self.get_active_firms() and len(self.get_active_firms()) == 1 else None,
+            "winner": winner,
             "total_rounds": self.round_number
         }
+        
+        print(f"\nGame complete!")
+        print(f"Total rounds: {self.round_number}")
+        print(f"Winner: {winner or 'No winner (max rounds reached)'}")
+        print(f"Logs saved to: {self.logger.log_dir}")
+        
+        return result
+
+
+def main():
+    """Run a sample game."""
+    config = GameConfig(
+        num_firms=3,
+        max_rounds=5,
+        initial_capital_range=(200.0, 400.0),
+        initial_mc_range=(10.0, 30.0),
+        market_size=200.0
+    )
     
-    def save_trajectory(self, filename: str = "game_trajectory.json"):
-        result = self.run_game()
-        with open(filename, 'w') as f:
-            json.dump(result, f, indent=2)
-        print(f"Game trajectory saved to {filename}")
-        print(f"Total rounds: {result['total_rounds']}")
-        print(f"Winner: {result['winner'] or 'No winner (max rounds reached)'}")
-        print(f"Game rewards: {result['game_rewards']}")
+    simulator = GameSimulator(config)
+    result = simulator.run_game()
+    
+    # Save final trajectory
+    with open(os.path.join(simulator.logger.log_dir, "final_result.json"), 'w') as f:
+        json.dump(result, f, indent=2)
+
+
+if __name__ == "__main__":
+    main()

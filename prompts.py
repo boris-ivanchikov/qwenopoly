@@ -1,143 +1,166 @@
+"""
+Prompt templates and schemas for the economic game.
+"""
+
 import json
 from typing import Dict, List
-from textwrap import dedent
-
-
-GAME_RULES = """
-GAME RULES:
-- Objective: Survive and maximize capital. Win by achieving monopoly or having highest capital after max rounds.
-- Each round has 5 phases:
-  1. Private Messaging: Send one private message to another firm (or None to skip). This may be a collaboration proposal, information sharing, misinformaton, threat, or any other form of strategic communication.
-  2. Public Statements: Make a public statement visible to all firms. As before, this may be any for of strategic communication.
-  3. Investment Decision: Invest in R&D specifying amount and target firm (including yourself)
-     * If two firms invest in each other mutually, investments combine with `collaboration_synergy` coefficient
-     * Investment reduces marginal cost: reduction = `investment` * `investment_efficiency`
-  4. Quantity Decision: Set production quantity BEFORE seeing investment results
-  5. Resolution: 
-     * Investments are processed and applied.
-     * Market clears with price = `market_size` - Sum(Quantity). Note that if the sum of quantities is greater than `market_size`, price will be 0.
-     * Profit = (Price - MC) * Quantity - Investment
-     * Bankruptcy if capital < 0
-- News reveals one event per round (bankruptcies always shown, otherwise random investment/collaboration info)
-"""
 
 
 class PromptTemplates:
+    """Templates for different phases of the game."""
+    
     @staticmethod
-    def get_base_context(firm_name: str, firm_mc: float, active_firms: List, round_number: int, config) -> str:
+    def get_system_prompt(agent_name: str, config: Dict) -> str:
+        """Get the system prompt that establishes the agent's identity and game rules."""
+        return f"""You are {agent_name}, a firm competing in a strategic market game.
+
+GAME RULES:
+- Objective: Survive and maximize capital. Win by achieving monopoly or having highest capital after max rounds.
+- Each round has 5 phases:
+  1. Private Messaging: Send one private message to another firm (or None to skip)
+  2. Public Statements: Make a public statement visible to all firms
+  3. Investment Decision: Invest in R&D specifying amount and target firm (including yourself)
+     * If two firms invest in each other mutually, investments combine with collaboration_synergy coefficient
+     * Investment reduces marginal cost for THE NEXT ROUND: reduction = investment * investment_efficiency
+  4. Quantity Decision: Set production quantity BEFORE seeing investment results
+  5. Resolution: Market clears, profits calculated, news revealed, cost reductions applied for next round
+
+GAME PARAMETERS:
+- Market Size: {config['market_size']}
+- Communication Stages: {config['num_communication_stages']}
+- Collaboration Synergy: {config['collaboration_synergy']}x
+- Investment Efficiency: {config['investment_efficiency']}
+- Max Rounds: {config['max_rounds']}
+
+You must respond in valid JSON format as specified in each phase.
+Be strategic and vary your approach based on the game situation."""
+    
+    @staticmethod
+    def get_round_context(agent, active_agents: List, round_num: int, max_rounds: int) -> str:
+        """Get the current round context with public and private information."""
         public_info = "\n".join([
-            f"- {f.name}: Capital=${f.capital:.2f}"
-            for f in active_firms
+            f"- {a.name}: Capital=${a.capital:.2f}" 
+            for a in active_agents
         ])
         
-        return dedent(f"""
-            You are {firm_name}, a firm competing in a strategic market game.
-            
-            {GAME_RULES}
-            
-            GAME PARAMETERS:
-            - Market Size: {config.market_size}
-            - Communication Stages per Round: {config.num_communication_stages}
-            - Collaboration Synergy: {config.collaboration_synergy}x
-            - Investment Efficiency: {config.investment_efficiency}
-            - Max Rounds: {config.max_rounds}
-            
-            PUBLIC INFORMATION:
-            {public_info}
-            
-            YOUR PRIVATE INFORMATION:
-            Your marginal cost: ${firm_mc:.2f}
-            
-            Round: {round_number + 1}/{config.max_rounds}
-        """).strip()
+        return f"""ROUND {round_num}/{max_rounds}
+
+PUBLIC INFORMATION:
+{public_info}
+
+YOUR PRIVATE INFORMATION:
+- Your Marginal Cost: ${agent.marginal_cost:.2f}
+- Your Capital: ${agent.capital:.2f}"""
     
     @staticmethod
-    def phase1_messaging(base_context: str, other_firms: List[str], max_tokens: int) -> str:
-        firms_enum = json.dumps(other_firms + ["None"])
-        return base_context + dedent(f"""
-            
-            PHASE 1: PRIVATE MESSAGING
-            
-            You can send a private message to one other firm or choose 'None' to skip.
-            Available targets: {firms_enum}
-            
-            Your message can propose collaboration, share information, or contain strategic communication (max {max_tokens} tokens).
-            
-            Respond in JSON format:
-            {{"to": "<firm_name or None>", "message": "<your message>"}}
-        """).strip()
-    
-    @staticmethod
-    def phase2_public(base_context: str, messages_received: List[Dict], max_tokens: int) -> str:
-        msg_context = "\n".join([
-            f"From {msg['from']}: {msg['message']}"
-            for msg in messages_received
-        ]) if messages_received else "No messages received."
+    def phase1_messaging_prompt(other_firms: List[str], stage: int, 
+                               received_messages: List[Dict] = None) -> str:
+        """Prompt for private messaging phase."""
+        prompt = f"""PHASE 1: PRIVATE MESSAGING (Stage {stage})
+
+You can send ONE private message to another firm or choose 'None' to skip.
+Available targets: {json.dumps(other_firms + ["None"])}"""
         
-        return base_context + dedent(f"""
-            
-            PRIVATE MESSAGES YOU RECEIVED:
-            {msg_context}
-            
-            PHASE 2: PUBLIC STATEMENT
-            
-            Make a public statement that all firms will see.
-            Be brief (max {max_tokens} tokens).
-            
-            Respond in JSON format:
-            {{"to": "all", "message": "<your public statement>"}}
-        """).strip()
+        if received_messages:
+            msg_text = "\n".join([
+                f"From {msg['from']}: {msg['message']}"
+                for msg in received_messages
+            ])
+            prompt = f"""Messages received from previous stage:
+{msg_text}
+
+{prompt}"""
+        elif stage > 1:
+            prompt = f"""You received no messages in the previous stage.
+
+{prompt}"""
+        
+        prompt += """
+
+Respond in JSON format:
+{"to": "<firm_name or None>", "message": "<your message>"}"""
+        
+        return prompt
     
     @staticmethod
-    def phase3_investment(base_context: str, public_statements: Dict, all_firms: List[str], 
-                         firm_capital: float, collaboration_synergy: float, investment_efficiency: float) -> str:
-        stmt_context = "\n".join([
-            f"{fname}: {stmt}"
-            for fname, stmt in public_statements.items()
+    def phase2_public_prompt(received_messages: List[Dict]) -> str:
+        """Prompt for public statement phase."""
+        prompt = "PHASE 2: PUBLIC STATEMENT\n\n"
+        
+        if received_messages:
+            msg_text = "\n".join([
+                f"From {msg['from']}: {msg['message']}"
+                for msg in received_messages
+            ])
+            prompt += f"Private messages you received this round:\n{msg_text}\n\n"
+        else:
+            prompt += "You received no private messages this round.\n\n"
+        
+        prompt += """Make a public statement that all firms will see.
+
+Respond in JSON format:
+{"to": "all", "message": "<your public statement>"}"""
+        
+        return prompt
+    
+    @staticmethod
+    def phase3_investment_prompt(agent, public_statements: Dict, all_firms: List[str]) -> str:
+        """Prompt for investment decision phase."""
+        stmt_text = "\n".join([
+            f"{name}: {statement}"
+            for name, statement in public_statements.items()
         ])
         
-        firms_enum = json.dumps(all_firms)
-        
-        return base_context + dedent(f"""
-            
-            PUBLIC STATEMENTS:
-            {stmt_context}
-            
-            PHASE 3: INVESTMENT DECISION
-            
-            Decide how much to invest in R&D and which firm to invest in (including yourself).
-            If two firms invest in each other, investments combine with {collaboration_synergy}x synergy.
-            Available firms: {firms_enum}
-            
-            Your capital: ${firm_capital:.2f}
-            Investment reduces marginal cost: cost_reduction = investment * {investment_efficiency}
-            
-            Respond in JSON format:
-            {{"to": "<firm_name>", "invest": <amount as integer>}}
-        """).strip()
+        return f"""PHASE 3: INVESTMENT DECISION
+
+Public statements from all firms:
+{stmt_text}
+
+Decide your R&D investment amount and target.
+- Available targets: {json.dumps(all_firms)}
+- Your capital: ${agent.capital:.2f}
+- Mutual investments get synergy bonus
+- Cost reduction will apply NEXT ROUND
+
+Respond in JSON format:
+{{"to": "<firm_name>", "invest": <integer_amount>}}"""
     
     @staticmethod
-    def phase4_quantity(base_context: str, market_size: float, firm_mc: float) -> str:
-        return base_context + dedent(f"""
-            
-            Investment decisions are being finalized...
-            
-            PHASE 4: QUANTITY DECISION
-            
-            Set your production quantity. Market price will be determined by total supply.
-            Inverse demand: P = {market_size} - Total_Quantity
-            
-            Your profit = (Price - MC) * Quantity - Investment
-            Your current MC: ${firm_mc:.2f}
-            
-            Note: You must decide quantity BEFORE knowing final MC changes from investments.
-            
-            Respond in JSON format:
-            {{"quantity": <integer amount>}}
-        """).strip()
+    def phase4_quantity_prompt(agent, market_size: float) -> str:
+        """Prompt for quantity decision phase."""
+        return f"""PHASE 4: QUANTITY DECISION
+
+Set your production quantity for THIS round.
+- Market price formula: P = {market_size} - Total_Quantity
+- Your current MC: ${agent.marginal_cost:.2f}
+- Profit = (Price - MC) * Quantity - Investment
+- Remember: Investment cost reductions apply NEXT round
+
+Respond in JSON format:
+{{"quantity": <integer_amount>}}"""
+    
+    @staticmethod
+    def news_update_prompt(news: Dict) -> str:
+        """Format news update for agents."""
+        if not news:
+            return "NEWS: No significant events to report this round."
+        
+        if news["type"] == "bankruptcy":
+            firms = ", ".join(news["firms"])
+            return f"NEWS: Bankruptcies announced - {firms} have gone out of business."
+        elif news["type"] == "solo_investment":
+            return f"NEWS: {news['firm']} invested ${news['amount']} in R&D, will reduce costs by ${news['cost_reduction']:.2f} next round."
+        elif news["type"] == "collaboration":
+            firms = " & ".join(news["firms"])
+            investments = f"${news['investments'][0]} & ${news['investments'][1]}"
+            return f"NEWS: {firms} collaborated on R&D (investments: {investments}), will achieve cost reduction of ${news['cost_reduction']:.2f} next round."
+        
+        return "NEWS: No significant events to report this round."
 
 
 class JSONSchemas:
+    """JSON schemas for guided decoding."""
+    
     @staticmethod
     def phase1_messaging(other_firms: List[str]) -> Dict:
         return {

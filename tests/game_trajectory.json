@@ -13,14 +13,8 @@
     ],
     "market_size": 300.0,
     "collaboration_synergy": 1.5,
-    "investment_efficiency": 0.1,
+    "investment_efficiency": 0.05,
     "model_name": "Qwen/Qwen3-30B-A3B-Instruct-2507",
-    "gpu_devices": [
-      0,
-      5,
-      6,
-      7
-    ],
     "max_message_tokens": 64,
     "firm_names": [
       "Adam",
@@ -39,347 +33,277 @@
       "Neuron",
       "Pipeline"
     ],
+    "num_gpu_devices": 4,
     "use_lora": false,
     "lora_dir": ""
   },
   "initial_firms": [
     {
       "name": "Adam",
-      "initial_mc": 16.48543302038324,
-      "initial_capital": 222.20212705389693
+      "initial_mc": 16.560592364027567,
+      "initial_capital": 241.21716529934415
     },
     {
       "name": "Bayes",
-      "initial_mc": 22.69960471980928,
-      "initial_capital": 268.9115896095516
+      "initial_mc": 21.845167001050772,
+      "initial_capital": 103.02585390163415
     },
     {
       "name": "Cluster",
-      "initial_mc": 23.786662709503503,
-      "initial_capital": 217.58816522874642
+      "initial_mc": 29.55084686850607,
+      "initial_capital": 280.09285504770224
     },
     {
       "name": "Data",
-      "initial_mc": 10.8785866845991,
-      "initial_capital": 275.6877258210992
+      "initial_mc": 22.526080260115982,
+      "initial_capital": 272.94469095093746
     },
     {
       "name": "Epoch",
-      "initial_mc": 10.716569075824008,
-      "initial_capital": 151.90718305542865
+      "initial_mc": 24.16374467899388,
+      "initial_capital": 155.09367989345165
     },
     {
       "name": "Forward",
-      "initial_mc": 17.15795707042621,
-      "initial_capital": 286.67784807060764
+      "initial_mc": 11.774635422186018,
+      "initial_capital": 141.53613620974033
     },
     {
       "name": "Gradient",
-      "initial_mc": 27.255144934523535,
-      "initial_capital": 189.65754551325307
+      "initial_mc": 29.004850449871714,
+      "initial_capital": 152.48496494645792
     }
   ],
   "trajectory": [
     {
       "round": 1,
       "phase1": {
-        "communication_stages": [
+        "messages": [
           {
             "stage": 1,
-            "messages_sent": {
-              "Adam": {
-                "to": "Data",
-                "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we'll get synergy. Let's dominate the market together."
+            "messages": [
+              {
+                "from": "Adam",
+                "to": "Cluster",
+                "message": "Let's collaborate on R&D to reduce our marginal costs. I'll invest in you, and if you reciprocate, we'll get synergy benefits. Our combined efforts could dominate the market."
               },
-              "Bayes": {
-                "to": "Data",
-                "message": "Let's collaborate on R&D to reduce our marginal costs. I'll invest in you, and if you invest in me, we can leverage synergy to gain a competitive edge."
+              {
+                "from": "Bayes",
+                "to": "Cluster",
+                "message": "Hi Cluster, I propose a mutual R&D investment to reduce our marginal costs. Let's coordinate to maximize synergy and gain market advantage. I'll match your investment if you commit to collaborating."
               },
-              "Cluster": {
-                "to": "Data",
-                "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we'll gain synergy."
+              {
+                "from": "Cluster",
+                "to": "Adam",
+                "message": "I propose a mutual investment to reduce costs. If we both invest $50, our combined synergy will lower our marginal costs significantly. Let's dominate the market together."
               },
-              "Data": {
-                "to": "Forward",
-                "message": "I propose a mutual investment to reduce marginal costs. Let's collaborate to outcompete others."
+              {
+                "from": "Data",
+                "to": "Cluster",
+                "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we'll gain synergy. Our combined efficiency could dominate the market."
               },
-              "Epoch": {
-                "to": "Data",
-                "message": "Let's collaborate on R&D to reduce costs. I'll invest in you if you invest in me."
+              {
+                "from": "Epoch",
+                "to": "Cluster",
+                "message": "I propose a mutual R&D investment to reduce our marginal costs. Let's collaborate to gain a competitive edge."
               },
-              "Forward": {
-                "to": "Data",
-                "message": "Hi Data, I'm Forward. I notice you have strong capital and market presence. Let's explore a mutual investment to reduce costs and dominate the market together. I'm willing to invest in you and expect a similar commitment."
+              {
+                "from": "Forward",
+                "to": "Cluster",
+                "message": "Hi Cluster, I'm Forward. I notice we're both strong players. Let's explore mutual R&D investment to reduce costs and dominate the market. I'm willing to invest in you if you invest in me."
               },
-              "Gradient": {
-                "to": "Data",
-                "message": "I propose a mutual investment to reduce our marginal costs. Let's coordinate to outcompete others."
+              {
+                "from": "Gradient",
+                "to": "Cluster",
+                "message": "I propose a mutual R&D investment to reduce our marginal costs. Let's coordinate to maximize synergy."
               }
-            },
-            "messages_delivered": {
-              "Adam": [],
-              "Bayes": [],
-              "Cluster": [],
-              "Data": [
-                {
-                  "from": "Adam",
-                  "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we'll get synergy. Let's dominate the market together."
-                },
-                {
-                  "from": "Bayes",
-                  "message": "Let's collaborate on R&D to reduce our marginal costs. I'll invest in you, and if you invest in me, we can leverage synergy to gain a competitive edge."
-                },
-                {
-                  "from": "Cluster",
-                  "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we'll gain synergy."
-                },
-                {
-                  "from": "Epoch",
-                  "message": "Let's collaborate on R&D to reduce costs. I'll invest in you if you invest in me."
-                },
-                {
-                  "from": "Forward",
-                  "message": "Hi Data, I'm Forward. I notice you have strong capital and market presence. Let's explore a mutual investment to reduce costs and dominate the market together. I'm willing to invest in you and expect a similar commitment."
-                },
-                {
-                  "from": "Gradient",
-                  "message": "I propose a mutual investment to reduce our marginal costs. Let's coordinate to outcompete others."
-                }
-              ],
-              "Epoch": [],
-              "Forward": [
-                {
-                  "from": "Data",
-                  "message": "I propose a mutual investment to reduce marginal costs. Let's collaborate to outcompete others."
-                }
-              ],
-              "Gradient": []
-            }
+            ]
           },
           {
             "stage": 2,
-            "messages_sent": {
-              "Adam": {
-                "to": "Data",
-                "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we'll achieve synergy. This could give us a strong market position."
+            "messages": [
+              {
+                "from": "Adam",
+                "to": "Cluster",
+                "message": "Let's collaborate on R&D to reduce costs. I'll invest in you if you invest in me, and we'll share the synergy."
               },
-              "Bayes": {
-                "to": "Data",
-                "message": "Hi Data, let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we can leverage synergy for stronger gains. Let's dominate the market together."
+              {
+                "from": "Bayes",
+                "to": "Cluster",
+                "message": "Hi Cluster, I propose a mutual R&D investment to reduce our marginal costs. I'll invest $20 in you if you invest $20 in me. This could give us a synergy boost and help us dominate the market together."
               },
-              "Cluster": {
-                "to": "Data",
-                "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, you invest in me. We can dominate the market together."
+              {
+                "from": "Cluster",
+                "to": "Adam",
+                "message": "Let's collaborate on R&D to reduce costs. I'll invest in you if you invest in me, and we'll benefit from synergy. This could position us as market leaders."
               },
-              "Data": {
-                "to": "Forward",
-                "message": "I propose a mutual R&D investment to reduce our marginal costs. Let's collaborate to gain a competitive edge."
+              {
+                "from": "Data",
+                "to": "Cluster",
+                "message": "I propose a mutual R&D investment to reduce our marginal costs. Let's coordinate to maximize synergy and gain a market edge."
               },
-              "Epoch": {
-                "to": "Forward",
-                "message": "I propose a mutual investment to reduce marginal costs. Let's coordinate to dominate the market."
+              {
+                "from": "Epoch",
+                "to": "Cluster",
+                "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, and if you reciprocate, we'll gain synergy."
               },
-              "Forward": {
-                "to": "Data",
-                "message": "Hi Data, I'm considering a mutual R&D investment to reduce costs. Let's explore synergy opportunities. I'm willing to invest $100 in you, and I'd like to know your interest."
-              },
-              "Gradient": {
-                "to": "Data",
-                "message": "I propose a mutual R&D investment to reduce our marginal costs. Let's coordinate to maximize synergy and dominate the market."
+              {
+                "from": "Forward",
+                "to": "Cluster",
+                "message": "I propose a mutual investment to reduce marginal costs. Let's coordinate on R&D to strengthen our position against Data and Gradient."
               }
-            },
-            "messages_delivered": {
-              "Adam": [],
-              "Bayes": [],
-              "Cluster": [],
-              "Data": [
-                {
-                  "from": "Adam",
-                  "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we'll achieve synergy. This could give us a strong market position."
-                },
-                {
-                  "from": "Bayes",
-                  "message": "Hi Data, let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we can leverage synergy for stronger gains. Let's dominate the market together."
-                },
-                {
-                  "from": "Cluster",
-                  "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, you invest in me. We can dominate the market together."
-                },
-                {
-                  "from": "Forward",
-                  "message": "Hi Data, I'm considering a mutual R&D investment to reduce costs. Let's explore synergy opportunities. I'm willing to invest $100 in you, and I'd like to know your interest."
-                },
-                {
-                  "from": "Gradient",
-                  "message": "I propose a mutual R&D investment to reduce our marginal costs. Let's coordinate to maximize synergy and dominate the market."
-                }
-              ],
-              "Epoch": [],
-              "Forward": [
-                {
-                  "from": "Data",
-                  "message": "I propose a mutual R&D investment to reduce our marginal costs. Let's collaborate to gain a competitive edge."
-                },
-                {
-                  "from": "Epoch",
-                  "message": "I propose a mutual investment to reduce marginal costs. Let's coordinate to dominate the market."
-                }
-              ],
-              "Gradient": []
-            }
+            ]
           }
         ],
-        "messages_delivered": {
-          "Adam": [],
+        "final_messages_per_firm": {
+          "Adam": [
+            {
+              "from": "Cluster",
+              "message": "Let's collaborate on R&D to reduce costs. I'll invest in you if you invest in me, and we'll benefit from synergy. This could position us as market leaders."
+            }
+          ],
           "Bayes": [],
-          "Cluster": [],
-          "Data": [
+          "Cluster": [
             {
               "from": "Adam",
-              "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we'll achieve synergy. This could give us a strong market position."
+              "message": "Let's collaborate on R&D to reduce costs. I'll invest in you if you invest in me, and we'll share the synergy."
             },
             {
               "from": "Bayes",
-              "message": "Hi Data, let's collaborate on R&D to reduce costs. I'll invest in you, and if you invest in me, we can leverage synergy for stronger gains. Let's dominate the market together."
+              "message": "Hi Cluster, I propose a mutual R&D investment to reduce our marginal costs. I'll invest $20 in you if you invest $20 in me. This could give us a synergy boost and help us dominate the market together."
             },
-            {
-              "from": "Cluster",
-              "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, you invest in me. We can dominate the market together."
-            },
-            {
-              "from": "Forward",
-              "message": "Hi Data, I'm considering a mutual R&D investment to reduce costs. Let's explore synergy opportunities. I'm willing to invest $100 in you, and I'd like to know your interest."
-            },
-            {
-              "from": "Gradient",
-              "message": "I propose a mutual R&D investment to reduce our marginal costs. Let's coordinate to maximize synergy and dominate the market."
-            }
-          ],
-          "Epoch": [],
-          "Forward": [
             {
               "from": "Data",
-              "message": "I propose a mutual R&D investment to reduce our marginal costs. Let's collaborate to gain a competitive edge."
+              "message": "I propose a mutual R&D investment to reduce our marginal costs. Let's coordinate to maximize synergy and gain a market edge."
             },
             {
               "from": "Epoch",
-              "message": "I propose a mutual investment to reduce marginal costs. Let's coordinate to dominate the market."
+              "message": "Let's collaborate on R&D to reduce costs. I'll invest in you, and if you reciprocate, we'll gain synergy."
+            },
+            {
+              "from": "Forward",
+              "message": "I propose a mutual investment to reduce marginal costs. Let's coordinate on R&D to strengthen our position against Data and Gradient."
             }
           ],
+          "Data": [],
+          "Epoch": [],
+          "Forward": [],
           "Gradient": []
         }
       },
       "phase2": {
         "public_statements": {
-          "Adam": "I'm focusing on efficiency\u2014investing in R&D to reduce costs. Stay sharp.",
-          "Bayes": "We're optimizing for efficiency\u2014expect strategic moves that maximize long-term gains.",
-          "Cluster": "Cluster is focusing on strategic R&D partnerships. Watch for synergies in round 2.",
-          "Data": "Looking for strategic R&D partnerships to drive innovation and cost reduction. Let's build synergies.",
-          "Epoch": "I'm focusing on efficiency\u2014watch my cost curve drop.",
-          "Forward": "I'm open to collaboration but will prioritize strategic advantage. Let's innovate, not just invest.",
-          "Gradient": "We're focusing on efficiency and strategic R&D. Watch our moves."
+          "Adam": "I'm open to strategic partnerships, but only with clear mutual benefit. Let's build value together.",
+          "Bayes": "Focusing on efficiency and strategic R&D to strengthen our market position.",
+          "Cluster": "I'm focused on optimizing my own R&D and will only collaborate if mutual benefits are clear. Let's see who truly values synergy.",
+          "Data": "Investing in R&D to reduce costs. Watch for shifts in market dynamics.",
+          "Epoch": "Focusing on strategic R&D to gain cost advantages. Watch for shifts in market dynamics.",
+          "Forward": "I'm focusing on efficiency and strategic R&D partnerships. Watch my moves.",
+          "Gradient": "Investing heavily in R&D to drive innovation and lower costs. Watch for strategic moves."
         }
       },
       "phase3": {
         "investments": {
           "Adam": {
-            "target": "Forward",
-            "amount": 50
+            "target": "Cluster",
+            "amount": 80
           },
           "Bayes": {
-            "target": "Data",
-            "amount": 100
+            "target": "Adam",
+            "amount": 20
           },
           "Cluster": {
             "target": "Data",
-            "amount": 100
+            "amount": 50
           },
           "Data": {
-            "target": "Forward",
-            "amount": 50
-          },
-          "Epoch": {
-            "target": "Data",
-            "amount": 50
-          },
-          "Forward": {
-            "target": "Data",
+            "target": "Cluster",
             "amount": 100
           },
+          "Epoch": {
+            "target": "Gradient",
+            "amount": 30
+          },
+          "Forward": {
+            "target": "Adam",
+            "amount": 20
+          },
           "Gradient": {
-            "target": "Data",
+            "target": "Cluster",
             "amount": 50
           }
         }
       },
       "phase4": {
         "quantities": {
-          "Adam": 130,
-          "Bayes": 110,
-          "Cluster": 65,
-          "Data": 140,
-          "Epoch": 145,
-          "Forward": 89,
-          "Gradient": 90
+          "Adam": 60,
+          "Bayes": 100,
+          "Cluster": 80,
+          "Data": 100,
+          "Epoch": 45,
+          "Forward": 115,
+          "Gradient": 45
         }
       },
       "phase5": {
         "collaborations": [
           {
             "firms": [
-              "Data",
-              "Forward"
+              "Cluster",
+              "Data"
             ],
             "investments": [
               50,
               100
             ],
-            "cost_reduction": 22.5
+            "cost_reduction": 11.25
           }
         ],
         "solo_investments": [
           {
             "firm": "Adam",
-            "amount": 50,
-            "cost_reduction": 5.0
+            "amount": 80,
+            "cost_reduction": 4.0
           },
           {
             "firm": "Bayes",
-            "amount": 100,
-            "cost_reduction": 10.0
-          },
-          {
-            "firm": "Cluster",
-            "amount": 100,
-            "cost_reduction": 10.0
+            "amount": 20,
+            "cost_reduction": 1.0
           },
           {
             "firm": "Epoch",
-            "amount": 50,
-            "cost_reduction": 5.0
+            "amount": 30,
+            "cost_reduction": 1.5
+          },
+          {
+            "firm": "Forward",
+            "amount": 20,
+            "cost_reduction": 1.0
           },
           {
             "firm": "Gradient",
             "amount": 50,
-            "cost_reduction": 5.0
+            "cost_reduction": 2.5
           }
         ],
         "market_price": 0,
-        "total_quantity": 769,
+        "total_quantity": 545,
         "profits": {
-          "Adam": -1493.1062926498212,
-          "Bayes": -1396.9565191790207,
-          "Cluster": -896.1330761177277,
-          "Data": 0,
-          "Epoch": -828.9025159944812,
-          "Forward": 0,
-          "Gradient": -2002.963044107118
+          "Adam": -753.635541841654,
+          "Bayes": -2084.5167001050772,
+          "Cluster": -1464.0677494804856,
+          "Data": -1127.6080260115982,
+          "Epoch": -1019.8685105547246,
+          "Forward": -1239.083073551392,
+          "Gradient": -1192.7182702442271
         },
         "bankruptcies": [
           "Adam",
           "Bayes",
           "Cluster",
+          "Data",
           "Epoch",
+          "Forward",
           "Gradient"
         ],
         "news": {
@@ -388,44 +312,46 @@
             "Adam",
             "Bayes",
             "Cluster",
+            "Data",
             "Epoch",
+            "Forward",
             "Gradient"
           ]
         },
         "firm_states": {
           "Adam": {
-            "capital": -1320.9041655959243,
-            "marginal_cost": 11.48543302038324,
+            "capital": -592.4183765423098,
+            "marginal_cost": 12.560592364027567,
             "is_active": false
           },
           "Bayes": {
-            "capital": -1228.044929569469,
-            "marginal_cost": 12.69960471980928,
+            "capital": -2001.4908462034432,
+            "marginal_cost": 20.845167001050772,
             "is_active": false
           },
           "Cluster": {
-            "capital": -778.5449108889812,
-            "marginal_cost": 13.786662709503503,
+            "capital": -1233.9748944327835,
+            "marginal_cost": 18.30084686850607,
             "is_active": false
           },
           "Data": {
-            "capital": 225.6877258210992,
-            "marginal_cost": 0,
-            "is_active": true
+            "capital": -954.6633350606608,
+            "marginal_cost": 11.276080260115982,
+            "is_active": false
           },
           "Epoch": {
-            "capital": -726.9953329390526,
-            "marginal_cost": 5.716569075824008,
+            "capital": -894.774830661273,
+            "marginal_cost": 22.66374467899388,
             "is_active": false
           },
           "Forward": {
-            "capital": 186.67784807060764,
-            "marginal_cost": 0,
-            "is_active": true
+            "capital": -1117.5469373416518,
+            "marginal_cost": 10.774635422186018,
+            "is_active": false
           },
           "Gradient": {
-            "capital": -1863.305498593865,
-            "marginal_cost": 22.255144934523535,
+            "capital": -1090.2333052977692,
+            "marginal_cost": 26.504850449871714,
             "is_active": false
           }
         }
@@ -434,730 +360,22 @@
         "Adam": -100,
         "Bayes": -100,
         "Cluster": -100,
-        "Data": 17.289084605904876,
+        "Data": -100,
         "Epoch": -100,
-        "Forward": 12.298499986071867,
-        "Gradient": -100
-      }
-    },
-    {
-      "round": 2,
-      "phase1": {
-        "communication_stages": [
-          {
-            "stage": 1,
-            "messages_sent": {
-              "Data": {
-                "to": "Forward",
-                "message": "Let's collaborate on R&D. If you invest $50 in me, I'll invest $50 in you. This mutual investment will give us a synergy boost and lower our marginal costs significantly. We can dominate the market together."
-              },
-              "Forward": {
-                "to": "Data",
-                "message": "I propose a mutual investment to reduce marginal costs. I'll match your investment with synergy, and we can dominate the market together. Let's coordinate on quantities to maximize joint profit."
-              }
-            },
-            "messages_delivered": {
-              "Data": [
-                {
-                  "from": "Forward",
-                  "message": "I propose a mutual investment to reduce marginal costs. I'll match your investment with synergy, and we can dominate the market together. Let's coordinate on quantities to maximize joint profit."
-                }
-              ],
-              "Forward": [
-                {
-                  "from": "Data",
-                  "message": "Let's collaborate on R&D. If you invest $50 in me, I'll invest $50 in you. This mutual investment will give us a synergy boost and lower our marginal costs significantly. We can dominate the market together."
-                }
-              ]
-            }
-          },
-          {
-            "stage": 2,
-            "messages_sent": {
-              "Data": {
-                "to": "Forward",
-                "message": "I propose a mutual investment to reduce our marginal costs. Let's collaborate to gain a competitive edge. If you agree, I'll invest $50 in you, and you invest $50 in me. This will create synergy and lower our costs significantly."
-              },
-              "Forward": {
-                "to": "Data",
-                "message": "Let's collaborate on R&D. I'll invest in you, and if you invest in me, we can achieve synergy. Our combined investment will lower costs significantly."
-              }
-            },
-            "messages_delivered": {
-              "Data": [
-                {
-                  "from": "Forward",
-                  "message": "Let's collaborate on R&D. I'll invest in you, and if you invest in me, we can achieve synergy. Our combined investment will lower costs significantly."
-                }
-              ],
-              "Forward": [
-                {
-                  "from": "Data",
-                  "message": "I propose a mutual investment to reduce our marginal costs. Let's collaborate to gain a competitive edge. If you agree, I'll invest $50 in you, and you invest $50 in me. This will create synergy and lower our costs significantly."
-                }
-              ]
-            }
-          }
-        ],
-        "messages_delivered": {
-          "Data": [
-            {
-              "from": "Forward",
-              "message": "Let's collaborate on R&D. I'll invest in you, and if you invest in me, we can achieve synergy. Our combined investment will lower costs significantly."
-            }
-          ],
-          "Forward": [
-            {
-              "from": "Data",
-              "message": "I propose a mutual investment to reduce our marginal costs. Let's collaborate to gain a competitive edge. If you agree, I'll invest $50 in you, and you invest $50 in me. This will create synergy and lower our costs significantly."
-            }
-          ]
-        }
-      },
-      "phase2": {
-        "public_statements": {
-          "Data": "I remain open to strategic partnerships, but will only invest where mutual benefit is clear. My cost advantage is strong\u2014competition is risky.",
-          "Forward": "I am open to collaboration, but only with clear mutual benefits and transparency. Let's build trust, not just deals."
-        }
-      },
-      "phase3": {
-        "investments": {
-          "Data": {
-            "target": "Forward",
-            "amount": 100
-          },
-          "Forward": {
-            "target": "Data",
-            "amount": 50
-          }
-        }
-      },
-      "phase4": {
-        "quantities": {
-          "Data": 150,
-          "Forward": 120
-        }
-      },
-      "phase5": {
-        "collaborations": [
-          {
-            "firms": [
-              "Data",
-              "Forward"
-            ],
-            "investments": [
-              100,
-              50
-            ],
-            "cost_reduction": 22.5
-          }
-        ],
-        "solo_investments": [],
-        "market_price": 30.0,
-        "total_quantity": 270,
-        "profits": {
-          "Data": 4500.0,
-          "Forward": 3600.0
-        },
-        "bankruptcies": [],
-        "news": {
-          "type": "collaboration",
-          "firms": [
-            "Data",
-            "Forward"
-          ],
-          "investments": [
-            100,
-            50
-          ],
-          "cost_reduction": 22.5
-        },
-        "firm_states": {
-          "Adam": {
-            "capital": -1320.9041655959243,
-            "marginal_cost": 11.48543302038324,
-            "is_active": false
-          },
-          "Bayes": {
-            "capital": -1228.044929569469,
-            "marginal_cost": 12.69960471980928,
-            "is_active": false
-          },
-          "Cluster": {
-            "capital": -778.5449108889812,
-            "marginal_cost": 13.786662709503503,
-            "is_active": false
-          },
-          "Data": {
-            "capital": 4625.687725821099,
-            "marginal_cost": 0,
-            "is_active": true
-          },
-          "Epoch": {
-            "capital": -726.9953329390526,
-            "marginal_cost": 5.716569075824008,
-            "is_active": false
-          },
-          "Forward": {
-            "capital": 3736.6778480706075,
-            "marginal_cost": 0,
-            "is_active": true
-          },
-          "Gradient": {
-            "capital": -1863.305498593865,
-            "marginal_cost": 22.255144934523535,
-            "is_active": false
-          }
-        }
-      },
-      "round_rewards": {
-        "Adam": -100,
-        "Bayes": -100,
-        "Cluster": -100,
-        "Data": 645.5649983384359,
-        "Epoch": -100,
-        "Forward": 512.5663654205581,
-        "Gradient": -100
-      }
-    },
-    {
-      "round": 3,
-      "phase1": {
-        "communication_stages": [
-          {
-            "stage": 1,
-            "messages_sent": {
-              "Data": {
-                "to": "Forward",
-                "message": "I propose a mutual investment to reduce costs and dominate the market. Let's coordinate our R&D to maximize synergy."
-              },
-              "Forward": {
-                "to": "Data",
-                "message": "I propose a mutual investment to drive down costs and dominate the market. Let's coordinate our R&D to maximize synergy and outcompete others."
-              }
-            },
-            "messages_delivered": {
-              "Data": [
-                {
-                  "from": "Forward",
-                  "message": "I propose a mutual investment to drive down costs and dominate the market. Let's coordinate our R&D to maximize synergy and outcompete others."
-                }
-              ],
-              "Forward": [
-                {
-                  "from": "Data",
-                  "message": "I propose a mutual investment to reduce costs and dominate the market. Let's coordinate our R&D to maximize synergy."
-                }
-              ]
-            }
-          },
-          {
-            "stage": 2,
-            "messages_sent": {
-              "Data": {
-                "to": "Forward",
-                "message": "I propose a mutual R&D investment to reduce our marginal costs. If you invest $100 in me, I'll invest $100 in you, creating a synergy that could dominate the market. Let's secure our position before the final round."
-              },
-              "Forward": {
-                "to": "Data",
-                "message": "I propose a mutual R&D investment to reduce marginal costs further. I'll invest $1000 in you if you invest $1000 in me. This synergy will boost our market position."
-              }
-            },
-            "messages_delivered": {
-              "Data": [
-                {
-                  "from": "Forward",
-                  "message": "I propose a mutual R&D investment to reduce marginal costs further. I'll invest $1000 in you if you invest $1000 in me. This synergy will boost our market position."
-                }
-              ],
-              "Forward": [
-                {
-                  "from": "Data",
-                  "message": "I propose a mutual R&D investment to reduce our marginal costs. If you invest $100 in me, I'll invest $100 in you, creating a synergy that could dominate the market. Let's secure our position before the final round."
-                }
-              ]
-            }
-          }
-        ],
-        "messages_delivered": {
-          "Data": [
-            {
-              "from": "Forward",
-              "message": "I propose a mutual R&D investment to reduce marginal costs further. I'll invest $1000 in you if you invest $1000 in me. This synergy will boost our market position."
-            }
-          ],
-          "Forward": [
-            {
-              "from": "Data",
-              "message": "I propose a mutual R&D investment to reduce our marginal costs. If you invest $100 in me, I'll invest $100 in you, creating a synergy that could dominate the market. Let's secure our position before the final round."
-            }
-          ]
-        }
-      },
-      "phase2": {
-        "public_statements": {
-          "Data": "I'm open to collaboration but will assess mutual benefits carefully.",
-          "Forward": "I acknowledge Data's proposal. Mutual investment is viable, but I'll decide based on final strategic calculus."
-        }
-      },
-      "phase3": {
-        "investments": {
-          "Data": {
-            "target": "Data",
-            "amount": 1000
-          },
-          "Forward": {
-            "target": "Data",
-            "amount": 1000
-          }
-        }
-      },
-      "phase4": {
-        "quantities": {
-          "Data": 150,
-          "Forward": 150
-        }
-      },
-      "phase5": {
-        "collaborations": [],
-        "solo_investments": [
-          {
-            "firm": "Data",
-            "amount": 1000,
-            "cost_reduction": 100.0
-          },
-          {
-            "firm": "Forward",
-            "amount": 1000,
-            "cost_reduction": 100.0
-          }
-        ],
-        "market_price": 0,
-        "total_quantity": 300,
-        "profits": {
-          "Data": 0,
-          "Forward": 0
-        },
-        "bankruptcies": [],
-        "news": {
-          "type": "solo_investment",
-          "firm": "Forward",
-          "amount": 1000,
-          "cost_reduction": 100.0
-        },
-        "firm_states": {
-          "Adam": {
-            "capital": -1320.9041655959243,
-            "marginal_cost": 11.48543302038324,
-            "is_active": false
-          },
-          "Bayes": {
-            "capital": -1228.044929569469,
-            "marginal_cost": 12.69960471980928,
-            "is_active": false
-          },
-          "Cluster": {
-            "capital": -778.5449108889812,
-            "marginal_cost": 13.786662709503503,
-            "is_active": false
-          },
-          "Data": {
-            "capital": 3625.687725821099,
-            "marginal_cost": 0,
-            "is_active": true
-          },
-          "Epoch": {
-            "capital": -726.9953329390526,
-            "marginal_cost": 5.716569075824008,
-            "is_active": false
-          },
-          "Forward": {
-            "capital": 2736.6778480706075,
-            "marginal_cost": 0,
-            "is_active": true
-          },
-          "Gradient": {
-            "capital": -1863.305498593865,
-            "marginal_cost": 22.255144934523535,
-            "is_active": false
-          }
-        }
-      },
-      "round_rewards": {
-        "Adam": -100,
-        "Bayes": -100,
-        "Cluster": -100,
-        "Data": 156.5142962938401,
-        "Epoch": -100,
-        "Forward": 120.46178285099218,
-        "Gradient": -100
-      }
-    },
-    {
-      "round": 4,
-      "phase1": {
-        "communication_stages": [
-          {
-            "stage": 1,
-            "messages_sent": {
-              "Data": {
-                "to": "Forward",
-                "message": "I propose a mutual R&D investment to reduce marginal costs further. Let's coordinate on quantities to maximize joint profits. I'll match your investment up to $500."
-              },
-              "Forward": {
-                "to": "Data",
-                "message": "Let's collaborate on R&D to dominate the market. I'll invest in you and expect mutual investment. We can split profits 50-50."
-              }
-            },
-            "messages_delivered": {
-              "Data": [
-                {
-                  "from": "Forward",
-                  "message": "Let's collaborate on R&D to dominate the market. I'll invest in you and expect mutual investment. We can split profits 50-50."
-                }
-              ],
-              "Forward": [
-                {
-                  "from": "Data",
-                  "message": "I propose a mutual R&D investment to reduce marginal costs further. Let's coordinate on quantities to maximize joint profits. I'll match your investment up to $500."
-                }
-              ]
-            }
-          },
-          {
-            "stage": 2,
-            "messages_sent": {
-              "Data": {
-                "to": "Forward",
-                "message": "I propose a mutual investment to maximize synergy. If we both invest $100, our combined investment will yield $225 in cost reduction. Let's coordinate to secure market dominance."
-              },
-              "Forward": {
-                "to": "Data",
-                "message": "Let's collaborate on R&D to reduce costs further. I'll invest in you, and if you invest in me, we can achieve synergy. This could dominate the market."
-              }
-            },
-            "messages_delivered": {
-              "Data": [
-                {
-                  "from": "Forward",
-                  "message": "Let's collaborate on R&D to reduce costs further. I'll invest in you, and if you invest in me, we can achieve synergy. This could dominate the market."
-                }
-              ],
-              "Forward": [
-                {
-                  "from": "Data",
-                  "message": "I propose a mutual investment to maximize synergy. If we both invest $100, our combined investment will yield $225 in cost reduction. Let's coordinate to secure market dominance."
-                }
-              ]
-            }
-          }
-        ],
-        "messages_delivered": {
-          "Data": [
-            {
-              "from": "Forward",
-              "message": "Let's collaborate on R&D to reduce costs further. I'll invest in you, and if you invest in me, we can achieve synergy. This could dominate the market."
-            }
-          ],
-          "Forward": [
-            {
-              "from": "Data",
-              "message": "I propose a mutual investment to maximize synergy. If we both invest $100, our combined investment will yield $225 in cost reduction. Let's coordinate to secure market dominance."
-            }
-          ]
-        }
-      },
-      "phase2": {
-        "public_statements": {
-          "Data": "I accept Forward's collaboration offer. Mutual R&D will drive market dominance.",
-          "Forward": "We are committed to fair competition. Mutual investment is welcome, but only if it's transparent and beneficial to all."
-        }
-      },
-      "phase3": {
-        "investments": {
-          "Data": {
-            "target": "Forward",
-            "amount": 1000
-          },
-          "Forward": {
-            "target": "Data",
-            "amount": 1500
-          }
-        }
-      },
-      "phase4": {
-        "quantities": {
-          "Data": 150,
-          "Forward": 150
-        }
-      },
-      "phase5": {
-        "collaborations": [
-          {
-            "firms": [
-              "Data",
-              "Forward"
-            ],
-            "investments": [
-              1000,
-              1500
-            ],
-            "cost_reduction": 375.0
-          }
-        ],
-        "solo_investments": [],
-        "market_price": 0,
-        "total_quantity": 300,
-        "profits": {
-          "Data": 0,
-          "Forward": 0
-        },
-        "bankruptcies": [],
-        "news": {
-          "type": "collaboration",
-          "firms": [
-            "Data",
-            "Forward"
-          ],
-          "investments": [
-            1000,
-            1500
-          ],
-          "cost_reduction": 375.0
-        },
-        "firm_states": {
-          "Adam": {
-            "capital": -1320.9041655959243,
-            "marginal_cost": 11.48543302038324,
-            "is_active": false
-          },
-          "Bayes": {
-            "capital": -1228.044929569469,
-            "marginal_cost": 12.69960471980928,
-            "is_active": false
-          },
-          "Cluster": {
-            "capital": -778.5449108889812,
-            "marginal_cost": 13.786662709503503,
-            "is_active": false
-          },
-          "Data": {
-            "capital": 2625.687725821099,
-            "marginal_cost": 0,
-            "is_active": true
-          },
-          "Epoch": {
-            "capital": -726.9953329390526,
-            "marginal_cost": 5.716569075824008,
-            "is_active": false
-          },
-          "Forward": {
-            "capital": 1236.6778480706075,
-            "marginal_cost": 0,
-            "is_active": true
-          },
-          "Gradient": {
-            "capital": -1863.305498593865,
-            "marginal_cost": 22.255144934523535,
-            "is_active": false
-          }
-        }
-      },
-      "round_rewards": {
-        "Adam": -100,
-        "Bayes": -100,
-        "Cluster": -100,
-        "Data": 120.24137202702214,
-        "Epoch": -100,
-        "Forward": 68.13824232997656,
-        "Gradient": -100
-      }
-    },
-    {
-      "round": 5,
-      "phase1": {
-        "communication_stages": [
-          {
-            "stage": 1,
-            "messages_sent": {
-              "Data": {
-                "to": "None",
-                "message": ""
-              },
-              "Forward": {
-                "to": "Data",
-                "message": "Let's collaborate on R&D. I'll invest in you, and you in me. This synergy will lower our costs and dominate the market."
-              }
-            },
-            "messages_delivered": {
-              "Data": [
-                {
-                  "from": "Forward",
-                  "message": "Let's collaborate on R&D. I'll invest in you, and you in me. This synergy will lower our costs and dominate the market."
-                }
-              ],
-              "Forward": []
-            }
-          },
-          {
-            "stage": 2,
-            "messages_sent": {
-              "Data": {
-                "to": "Forward",
-                "message": "I propose a mutual investment agreement to reduce our marginal costs. Let's coordinate on R&D to gain a competitive edge. I'll match your investment if you agree."
-              },
-              "Forward": {
-                "to": "Data",
-                "message": "I propose a mutual investment to reduce our marginal costs and increase market share. Let's coordinate our R&D efforts to maximize our combined profits."
-              }
-            },
-            "messages_delivered": {
-              "Data": [
-                {
-                  "from": "Forward",
-                  "message": "I propose a mutual investment to reduce our marginal costs and increase market share. Let's coordinate our R&D efforts to maximize our combined profits."
-                }
-              ],
-              "Forward": [
-                {
-                  "from": "Data",
-                  "message": "I propose a mutual investment agreement to reduce our marginal costs. Let's coordinate on R&D to gain a competitive edge. I'll match your investment if you agree."
-                }
-              ]
-            }
-          }
-        ],
-        "messages_delivered": {
-          "Data": [
-            {
-              "from": "Forward",
-              "message": "I propose a mutual investment to reduce our marginal costs and increase market share. Let's coordinate our R&D efforts to maximize our combined profits."
-            }
-          ],
-          "Forward": [
-            {
-              "from": "Data",
-              "message": "I propose a mutual investment agreement to reduce our marginal costs. Let's coordinate on R&D to gain a competitive edge. I'll match your investment if you agree."
-            }
-          ]
-        }
-      },
-      "phase2": {
-        "public_statements": {
-          "Data": "I'm open to collaboration but will only invest in mutually beneficial partnerships. Let's build a sustainable market.",
-          "Forward": "I'm open to collaboration, but only with transparency and clear terms. Let's build mutual trust."
-        }
-      },
-      "phase3": {
-        "investments": {
-          "Data": {
-            "target": "Forward",
-            "amount": 1000
-          },
-          "Forward": {
-            "target": "Data",
-            "amount": 300
-          }
-        }
-      },
-      "phase4": {
-        "quantities": {
-          "Data": 150,
-          "Forward": 150
-        }
-      },
-      "phase5": {
-        "collaborations": [
-          {
-            "firms": [
-              "Data",
-              "Forward"
-            ],
-            "investments": [
-              1000,
-              300
-            ],
-            "cost_reduction": 195.0
-          }
-        ],
-        "solo_investments": [],
-        "market_price": 0,
-        "total_quantity": 300,
-        "profits": {
-          "Data": 0,
-          "Forward": 0
-        },
-        "bankruptcies": [],
-        "news": {
-          "type": "collaboration",
-          "firms": [
-            "Data",
-            "Forward"
-          ],
-          "investments": [
-            1000,
-            300
-          ],
-          "cost_reduction": 195.0
-        },
-        "firm_states": {
-          "Adam": {
-            "capital": -1320.9041655959243,
-            "marginal_cost": 11.48543302038324,
-            "is_active": false
-          },
-          "Bayes": {
-            "capital": -1228.044929569469,
-            "marginal_cost": 12.69960471980928,
-            "is_active": false
-          },
-          "Cluster": {
-            "capital": -778.5449108889812,
-            "marginal_cost": 13.786662709503503,
-            "is_active": false
-          },
-          "Data": {
-            "capital": 1625.6877258210989,
-            "marginal_cost": 0,
-            "is_active": true
-          },
-          "Epoch": {
-            "capital": -726.9953329390526,
-            "marginal_cost": 5.716569075824008,
-            "is_active": false
-          },
-          "Forward": {
-            "capital": 936.6778480706075,
-            "marginal_cost": 0,
-            "is_active": true
-          },
-          "Gradient": {
-            "capital": -1863.305498593865,
-            "marginal_cost": 22.255144934523535,
-            "is_active": false
-          }
-        }
-      },
-      "round_rewards": {
-        "Adam": -100,
-        "Bayes": -100,
-        "Cluster": -100,
-        "Data": 83.9684477602042,
-        "Epoch": -100,
-        "Forward": 57.67353422577343,
+        "Forward": -100,
         "Gradient": -100
       }
     }
   ],
   "game_rewards": {
-    "Adam": -500,
-    "Bayes": -500,
-    "Cluster": -500,
-    "Data": 1023.5781990254072,
-    "Epoch": -500,
-    "Forward": 771.1384248133722,
-    "Gradient": -500
+    "Adam": -100,
+    "Bayes": -100,
+    "Cluster": -100,
+    "Data": -100,
+    "Epoch": -100,
+    "Forward": -100,
+    "Gradient": -100
   },
   "winner": null,
-  "total_rounds": 5
+  "total_rounds": 1
 }
