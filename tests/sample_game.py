@@ -6,29 +6,22 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from game import GameConfig, GameSimulator
 
 def main():
-    parser = argparse.ArgumentParser(description='Sample a firm competition game')
-    parser.add_argument('--use-lora', type=bool, default=False, help='Enable LoRA adapters')
-    parser.add_argument('--lora-dir', type=str, default=None, help='Directory containing LoRA adapters (named by firm, optional)')
-    parser.add_argument('--num-firms', type=int, default=3, help='Number of firms')
-    parser.add_argument('--max-rounds', type=int, default=5, help='Maximum number of rounds')
-    args = parser.parse_args()
-    
     print("=" * 60)
     print("SAMPLING ONE GAME WITH vLLM")
     print("=" * 60)
     
     config = GameConfig(
-        num_firms=args.num_firms,
-        max_rounds=args.max_rounds,
-        initial_capital=1000.0,
+        num_firms=7,
+        max_rounds=5,
+        initial_capital_range=(100.0, 300.0),
         initial_mc_range=(10.0, 30.0),
         gpu_devices=[0, 5, 6, 7],
-        market_size=100.0,
+        market_size=300.0,
         collaboration_synergy=1.5,
         investment_efficiency=0.1,
         max_message_tokens=64,
-        use_lora=args.use_lora,
-        lora_dir=args.lora_dir
+        use_lora=False,
+        lora_dir=""
     )
     
     print(f"\nConfiguration:")
@@ -36,7 +29,8 @@ def main():
     print(f"  GPU Devices: {config.gpu_devices}")
     print(f"  Number of Firms: {config.num_firms}")
     print(f"  Max Rounds: {config.max_rounds}")
-    print(f"  Initial Capital: ${config.initial_capital}")
+    print(f"  Initial Capital Range: ${config.initial_capital_range[0]:.0f}-${config.initial_capital_range[1]:.0f}")
+    print(f"  Initial MC Range: ${config.initial_mc_range[0]:.1f}-${config.initial_mc_range[1]:.1f}")
     print(f"  Market Size: {config.market_size}")
     print(f"  Max Message Tokens: {config.max_message_tokens}")
     print(f"  Use LoRA: {config.use_lora}")

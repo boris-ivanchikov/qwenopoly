@@ -19,15 +19,17 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(log_filename),
-        logging.StreamHandler()
+        logging.FileHandler(log_filename)
     ]
 )
 
 for logger_name in ['vllm', 'ray', 'torch', 'transformers']:
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.WARNING)
-    logger.addHandler(logging.FileHandler(log_filename))
+    logger.propagate = False
+    file_handler = logging.FileHandler(log_filename)
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    logger.addHandler(file_handler)
 
 print(f"Logging to: {log_filename}")
 
@@ -40,17 +42,20 @@ class Firm:
     capital: float
     is_active: bool = True
     lora_adapter: Optional[str] = None
+    initial_mc: float = 0.0
+    initial_capital: float = 0.0
 
 
 @dataclass
 class GameConfig:
     num_firms: int = 3
     max_rounds: int = 10
-    initial_capital: float = 1000.0
+    num_communication_stages: int = 2
+    initial_capital_range: tuple = (300.0, 500.0)
     initial_mc_range: tuple = (10.0, 30.0)
     market_size: float = 100.0
     collaboration_synergy: float = 1.5
-    investment_efficiency: float = 0.1
+    investment_efficiency: float = 0.05
     model_name: str = "Qwen/Qwen3-30B-A3B-Instruct-2507"
     gpu_devices: List[int] = None
     max_message_tokens: int = 64
@@ -84,6 +89,7 @@ class GameSimulator:
         selected_names = self.config.firm_names[:self.config.num_firms]
         for i in range(self.config.num_firms):
             mc = random.uniform(*self.config.initial_mc_range)
+            capital = random.uniform(*self.config.initial_capital_range)
             lora_adapter = None
             if self.config.use_lora and self.config.lora_dir:
                 lora_path = os.path.join(self.config.lora_dir, selected_names[i])
@@ -94,8 +100,10 @@ class GameSimulator:
                 id=i,
                 name=selected_names[i],
                 marginal_cost=mc,
-                capital=self.config.initial_capital,
-                lora_adapter=lora_adapter
+                capital=capital,
+                lora_adapter=lora_adapter,
+                initial_mc=mc,
+                initial_capital=capital
             )
             self.firms.append(firm)
     
@@ -135,7 +143,7 @@ class GameSimulator:
         active_firms = self.get_active_firms()
         base_context = PromptTemplates.get_base_context(
             firm.name, firm.marginal_cost, active_firms, 
-            self.round_number, self.config.max_rounds
+            self.round_number, self.config
         )
         
         if phase == "phase1_messaging":
@@ -184,9 +192,10 @@ class GameSimulator:
         return {}
     
     def query_llm_batch(self, prompts: List[str], firms: List[Firm], phase: str) -> List[Dict]:
-        outputs = []
+        sampling_params_list = []
+        lora_requests = [] if self.config.use_lora else None
         
-        for prompt, firm in zip(prompts, firms):
+        for firm in firms:
             schema = self.create_json_schema(phase, firm)
             guided_decoding_params = GuidedDecodingParams(json=schema)
             sampling_params = SamplingParams(
@@ -196,14 +205,15 @@ class GameSimulator:
                 seed=random.randint(0, 1000000),
                 guided_decoding=guided_decoding_params
             )
+            sampling_params_list.append(sampling_params)
             
             if self.config.use_lora:
-                lora_request = LoRARequest(f"adapter_{firm.id}", 1, firm.lora_adapter)
-                output = self.llm.generate([prompt], sampling_params, lora_requests=[lora_request])
-            else:
-                output = self.llm.generate([prompt], sampling_params)
-            
-            outputs.extend(output)
+                lora_requests.append(LoRARequest(f"adapter_{firm.name}", firm.id, firm.lora_adapter))
+        
+        if self.config.use_lora:
+            outputs = self.llm.generate(prompts, sampling_params_list, lora_requests=lora_requests, use_tqdm=True)
+        else:
+            outputs = self.llm.generate(prompts, sampling_params_list, use_tqdm=True)
         
         responses = []
         for output, firm in zip(outputs, firms):
@@ -225,26 +235,43 @@ class GameSimulator:
     
     def phase1_private_messaging(self) -> Dict:
         active_firms = self.get_active_firms()
-        prompts = [self.create_prompt(f, "phase1_messaging", {}) for f in active_firms]
-        responses = self.query_llm_batch(prompts, active_firms, "phase1_messaging")
+        all_stages_data = []
         
-        messages = {}
-        for firm, response in zip(active_firms, responses):
-            messages[firm.name] = response
-        
-        delivered_messages = {f.name: [] for f in active_firms}
-        for sender_name, msg_data in messages.items():
-            if msg_data["to"] != "None":
-                target = msg_data["to"]
-                if target in delivered_messages:
-                    delivered_messages[target].append({
-                        "from": sender_name,
-                        "message": msg_data["message"]
-                    })
+        for stage in range(self.config.num_communication_stages):
+            prompts = []
+            for firm in active_firms:
+                context = {}
+                if stage > 0:
+                    context = {
+                        "messages_received": all_stages_data[stage - 1]["messages"].get(firm.name, {}).get("received", [])
+                    }
+                prompts.append(self.create_prompt(firm, "phase1_messaging", context))
+            
+            responses = self.query_llm_batch(prompts, active_firms, "phase1_messaging")
+            
+            messages = {}
+            for firm in active_firms:
+                messages[firm.name] = {"sent": None, "received": []}
+            
+            for firm, response in zip(active_firms, responses):
+                messages[firm.name]["sent"] = response
+                
+                if response["to"] != "None":
+                    target = response["to"]
+                    if target in messages:
+                        messages[target]["received"].append({
+                            "from": firm.name,
+                            "message": response["message"]
+                        })
+            
+            all_stages_data.append({
+                "stage": stage + 1,
+                "messages": messages
+            })
         
         return {
-            "messages_sent": messages,
-            "messages_delivered": delivered_messages
+            "communication_stages": all_stages_data,
+            "final_messages_per_firm": {fname: data["received"] for fname, data in all_stages_data[-1]["messages"].items()} if all_stages_data else {}
         }
     
     def phase2_public_statements(self, phase1_data: Dict) -> Dict:
@@ -253,7 +280,7 @@ class GameSimulator:
         prompts = []
         for firm in active_firms:
             context = {
-                "messages_received": phase1_data["messages_delivered"][firm.name]
+                "messages_received": phase1_data["final_messages_per_firm"].get(firm.name, [])
             }
             prompts.append(self.create_prompt(firm, "phase2_public", context))
         
@@ -420,7 +447,7 @@ class GameSimulator:
                 rewards[firm.name] = -100
             else:
                 profit = resolution_data["profits"][firm.name]
-                capital_reward = firm.capital / self.config.initial_capital
+                capital_reward = firm.capital / firm.initial_capital
                 market_share = (resolution_data["quantities"][firm.name] / 
                                max(1, resolution_data["total_quantity"]))
                 
@@ -484,14 +511,14 @@ class GameSimulator:
             "initial_firms": [
                 {
                     "name": f.name,
-                    "initial_mc": f.marginal_cost,
-                    "initial_capital": self.config.initial_capital
+                    "initial_mc": f.initial_mc,
+                    "initial_capital": f.initial_capital
                 }
                 for f in self.firms
             ],
             "trajectory": self.trajectory,
             "game_rewards": game_rewards,
-            "winner": self.get_active_firms()[0].name if len(self.get_active_firms()) == 1 else None,
+            "winner": self.get_active_firms()[0].name if self.get_active_firms() and len(self.get_active_firms()) == 1 else None,
             "total_rounds": self.round_number
         }
     

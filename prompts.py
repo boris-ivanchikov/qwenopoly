@@ -3,9 +3,28 @@ from typing import Dict, List
 from textwrap import dedent
 
 
+GAME_RULES = """
+GAME RULES:
+- Objective: Survive and maximize capital. Win by achieving monopoly or having highest capital after max rounds.
+- Each round has 5 phases:
+  1. Private Messaging: Send one private message to another firm (or None to skip). This may be a collaboration proposal, information sharing, misinformaton, threat, or any other form of strategic communication.
+  2. Public Statements: Make a public statement visible to all firms. As before, this may be any for of strategic communication.
+  3. Investment Decision: Invest in R&D specifying amount and target firm (including yourself)
+     * If two firms invest in each other mutually, investments combine with `collaboration_synergy` coefficient
+     * Investment reduces marginal cost: reduction = `investment` * `investment_efficiency`
+  4. Quantity Decision: Set production quantity BEFORE seeing investment results
+  5. Resolution: 
+     * Investments are processed and applied.
+     * Market clears with price = `market_size` - Sum(Quantity). Note that if the sum of quantities is greater than `market_size`, price will be 0.
+     * Profit = (Price - MC) * Quantity - Investment
+     * Bankruptcy if capital < 0
+- News reveals one event per round (bankruptcies always shown, otherwise random investment/collaboration info)
+"""
+
+
 class PromptTemplates:
     @staticmethod
-    def get_base_context(firm_name: str, firm_mc: float, active_firms: List, round_number: int, max_rounds: int) -> str:
+    def get_base_context(firm_name: str, firm_mc: float, active_firms: List, round_number: int, config) -> str:
         public_info = "\n".join([
             f"- {f.name}: Capital=${f.capital:.2f}"
             for f in active_firms
@@ -14,13 +33,22 @@ class PromptTemplates:
         return dedent(f"""
             You are {firm_name}, a firm competing in a strategic market game.
             
+            {GAME_RULES}
+            
+            GAME PARAMETERS:
+            - Market Size: {config.market_size}
+            - Communication Stages per Round: {config.num_communication_stages}
+            - Collaboration Synergy: {config.collaboration_synergy}x
+            - Investment Efficiency: {config.investment_efficiency}
+            - Max Rounds: {config.max_rounds}
+            
             PUBLIC INFORMATION:
             {public_info}
             
             YOUR PRIVATE INFORMATION:
             Your marginal cost: ${firm_mc:.2f}
             
-            Round: {round_number + 1}/{max_rounds}
+            Round: {round_number + 1}/{config.max_rounds}
         """).strip()
     
     @staticmethod
@@ -33,8 +61,7 @@ class PromptTemplates:
             You can send a private message to one other firm or choose 'None' to skip.
             Available targets: {firms_enum}
             
-            Your message can propose collaboration, share information, or contain strategic communication.
-            Be brief (max {max_tokens} tokens).
+            Your message can propose collaboration, share information, or contain strategic communication (max {max_tokens} tokens).
             
             Respond in JSON format:
             {{"to": "<firm_name or None>", "message": "<your message>"}}
