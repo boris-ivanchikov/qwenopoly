@@ -16,17 +16,15 @@ def main():
     
     # Configure the game
     config = GameConfig(
-        num_firms=7,
+        num_firms=5,
         max_rounds=5,
         initial_capital_range=(100.0, 300.0),
         initial_mc_range=(10.0, 30.0),
         market_size=300.0,
         collaboration_synergy=1.5,
         investment_efficiency=0.1,
-        max_message_tokens=128,
-        num_gpus=4,
-        use_lora=False,
-        lora_dir=""
+        max_message_tokens=256,
+        num_gpus=4
     )
     
     print(f"\nConfiguration:")
@@ -39,18 +37,15 @@ def main():
     print(f"  Market Size: {config.market_size}")
     print(f"  Collaboration Synergy: {config.collaboration_synergy}x")
     print(f"  Investment Efficiency: {config.investment_efficiency}")
-    print(f"  Use LoRA: {config.use_lora}")
     
     print("\n" + "=" * 60)
     print("Starting simulation...")
     print("=" * 60 + "\n")
     
-    # Run the simulation
     simulator = GameSimulator(config)
     result = simulator.run_game()
     
-    # Save results
-    output_path = os.path.join(simulator.logger.log_dir, "game_result.json")
+    output_path = os.path.join(simulator.log_dir, "game_result.json")
     import json
     with open(output_path, 'w') as f:
         json.dump(result, f, indent=2)
@@ -59,7 +54,7 @@ def main():
     print("SIMULATION COMPLETE")
     print("=" * 60)
     print(f"Results saved to: {output_path}")
-    print(f"Logs directory: {simulator.logger.log_dir}")
+    print(f"Logs directory: {simulator.log_dir}")
 
 
 if __name__ == "__main__":

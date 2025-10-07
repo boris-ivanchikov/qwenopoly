@@ -10,14 +10,13 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, asdict
 
 from agent import Agent, LLMEngine
-from logger import GameLogger
 from prompts import PromptTemplates, JSONSchemas
 
 
 @dataclass
 class GameConfig:
     """Game configuration parameters."""
-    num_firms: int = 3
+    num_firms: int = 5
     max_rounds: int = 10
     num_communication_stages: int = 2
     initial_capital_range: tuple = (300.0, 500.0)
@@ -29,8 +28,6 @@ class GameConfig:
     num_gpus: int = 4
     max_message_tokens: int = 256
     firm_names: List[str] = None
-    use_lora: bool = False
-    lora_dir: Optional[str] = None
     
     def __post_init__(self):
         if self.firm_names is None:
@@ -55,8 +52,12 @@ class GameSimulator:
         self.trajectory = []
         self.pending_cost_reductions = {}
         
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.log_dir = os.path.join("logs", f"game_{timestamp}")
+        os.makedirs(self.log_dir, exist_ok=True)
+        print(f"Game logs will be saved to: {self.log_dir}")
+        
         self.llm_engine = LLMEngine(config.to_dict())
-        self.logger = GameLogger()
         
         self.initialize_agents()
     
@@ -68,31 +69,19 @@ class GameSimulator:
             mc = random.uniform(*self.config.initial_mc_range)
             capital = random.uniform(*self.config.initial_capital_range)
             
-            lora_adapter = None
-            if self.config.use_lora and self.config.lora_dir:
-                lora_path = os.path.join(self.config.lora_dir, name)
-                if os.path.exists(lora_path):
-                    lora_adapter = lora_path
-            
             agent = Agent(
                 id=i,
                 name=name,
                 marginal_cost=mc,
                 capital=capital,
-                lora_adapter=lora_adapter,
                 initial_mc=mc,
                 initial_capital=capital
             )
             
-            # Set system prompt
             system_prompt = PromptTemplates.get_system_prompt(name, self.config.to_dict())
             agent.add_message("system", system_prompt)
             
-            # Initialize logger for this agent
-            self.logger.initialize_agent_log(name, {
-                "initial_mc": mc,
-                "initial_capital": capital
-            })
+            agent.initialize_log_file(self.log_dir)
             
             self.agents.append(agent)
     
@@ -105,24 +94,41 @@ class GameSimulator:
         active = self.get_active_agents()
         return [a.name for a in active if a.id != agent.id]
     
-    def phase1_private_messaging(self) -> Dict:
-        """Execute private messaging phase with multiple stages."""
+    def phase1_public_statements(self) -> Dict:
+        """Execute public statement phase."""
         active_agents = self.get_active_agents()
-        all_stage_messages = []
         
         for agent in active_agents:
             round_context = PromptTemplates.get_round_context(
                 agent, active_agents, self.round_number, self.config.max_rounds
             )
             agent.add_message("user", round_context)
+            prompt = PromptTemplates.phase1_public_prompt()
+            agent.add_message("user", prompt)
+        
+        schema = JSONSchemas.phase1_public()
+        responses = self.llm_engine.generate(
+            active_agents, schema, self.config.max_message_tokens
+        )
+        
+        statements = {}
+        for agent, response in zip(active_agents, responses):
+            agent.add_message("assistant", response["text"])
+            if response.get("json"):
+                statements[agent.name] = response["json"]["message"]
+        
+        return {"public_statements": statements}
+    
+    def phase2_private_messaging(self, public_statements: Dict) -> Dict:
+        """Execute private messaging phase with multiple stages."""
+        active_agents = self.get_active_agents()
+        all_stage_messages = []
+        message_senders_per_agent = {agent.name: [] for agent in active_agents}
         
         for stage in range(1, self.config.num_communication_stages + 1):
             stage_messages = []
             
-            # Collect prompts for all agents
-            prompts = []
             for agent in active_agents:
-                # Get messages sent to this agent in previous stage
                 received_messages = []
                 if stage > 1 and all_stage_messages:
                     received_messages = [
@@ -132,23 +138,27 @@ class GameSimulator:
                     ]
                 
                 other_firms = self.get_other_agent_names(agent)
-                prompt = PromptTemplates.phase1_messaging_prompt(
-                    other_firms, stage, received_messages
-                )
+                firms_that_sent = message_senders_per_agent.get(agent.name, []) if stage > 1 else None
                 
-                # Add to agent's conversation
+                if stage == 1:
+                    prompt = PromptTemplates.phase2_messaging_prompt(
+                        other_firms, stage, received_messages, 
+                        public_statements["public_statements"], firms_that_sent
+                    )
+                else:
+                    prompt = PromptTemplates.phase2_messaging_prompt(
+                        other_firms, stage, received_messages, None, firms_that_sent
+                    )
+                
                 agent.add_message("user", prompt)
-                prompts.append(self.llm_engine.build_conversation_prompt(agent, ""))
             
-            # Generate responses
-            schema = JSONSchemas.phase1_messaging(
+            schema = JSONSchemas.phase2_messaging(
                 self.get_other_agent_names(active_agents[0])
             )
             responses = self.llm_engine.generate(
-                active_agents, prompts, schema, self.config.max_message_tokens
+                active_agents, schema, self.config.max_message_tokens
             )
             
-            # Process responses and update conversations
             for agent, response in zip(active_agents, responses):
                 agent.add_message("assistant", response["text"])
                 
@@ -160,10 +170,11 @@ class GameSimulator:
                             "to": json_data["to"],
                             "message": json_data["message"]
                         })
+                        if agent.name not in message_senders_per_agent[json_data["to"]]:
+                            message_senders_per_agent[json_data["to"]].append(agent.name)
             
             all_stage_messages.append(stage_messages)
         
-        # Prepare final messages per agent
         final_messages = {}
         for agent in active_agents:
             agent_messages = []
@@ -180,54 +191,20 @@ class GameSimulator:
             "final_messages_per_agent": final_messages
         }
     
-    def phase2_public_statements(self, private_messages: Dict) -> Dict:
-        """Execute public statement phase."""
-        active_agents = self.get_active_agents()
-        prompts = []
-        
-        for agent in active_agents:
-            received = private_messages["final_messages_per_agent"].get(agent.name, [])
-            prompt = PromptTemplates.phase2_public_prompt(received)
-            
-            agent.add_message("user", prompt)
-            prompts.append(self.llm_engine.build_conversation_prompt(agent, ""))
-        
-        # Generate responses
-        schema = JSONSchemas.phase2_public()
-        responses = self.llm_engine.generate(
-            active_agents, prompts, schema, self.config.max_message_tokens
-        )
-        
-        # Process responses
-        statements = {}
-        for agent, response in zip(active_agents, responses):
-            agent.add_message("assistant", response["text"])
-            if response.get("json"):
-                statements[agent.name] = response["json"]["message"]
-        
-        return {"public_statements": statements}
-    
-    def phase3_investments(self, public_statements: Dict) -> Dict:
+    def phase3_investments(self) -> Dict:
         """Execute investment decision phase."""
         active_agents = self.get_active_agents()
-        prompts = []
         
         for agent in active_agents:
             all_firm_names = [a.name for a in active_agents]
-            prompt = PromptTemplates.phase3_investment_prompt(
-                agent, public_statements["public_statements"], all_firm_names
-            )
-            
+            prompt = PromptTemplates.phase3_investment_prompt(agent, all_firm_names)
             agent.add_message("user", prompt)
-            prompts.append(self.llm_engine.build_conversation_prompt(agent, ""))
         
-        # Generate responses
         schema = JSONSchemas.phase3_investment([a.name for a in active_agents])
         responses = self.llm_engine.generate(
-            active_agents, prompts, schema, self.config.max_message_tokens
+            active_agents, schema, self.config.max_message_tokens
         )
         
-        # Process responses
         investments = {}
         for agent, response in zip(active_agents, responses):
             agent.add_message("assistant", response["text"])
@@ -243,23 +220,19 @@ class GameSimulator:
     def phase4_quantities(self) -> Dict:
         """Execute quantity decision phase."""
         active_agents = self.get_active_agents()
-        prompts = []
+        num_active = len(active_agents)
         
         for agent in active_agents:
             prompt = PromptTemplates.phase4_quantity_prompt(
-                agent, self.config.market_size
+                agent, self.config.market_size, num_active
             )
-            
             agent.add_message("user", prompt)
-            prompts.append(self.llm_engine.build_conversation_prompt(agent, ""))
         
-        # Generate responses
         schema = JSONSchemas.phase4_quantity()
         responses = self.llm_engine.generate(
-            active_agents, prompts, schema, self.config.max_message_tokens
+            active_agents, schema, self.config.max_message_tokens
         )
         
-        # Process responses
         quantities = {}
         for agent, response in zip(active_agents, responses):
             agent.add_message("assistant", response["text"])
@@ -393,28 +366,31 @@ class GameSimulator:
         self.round_number += 1
         
         for agent in self.agents:
-            agent.clear_round_context()
             if agent.name in self.pending_cost_reductions:
                 agent.marginal_cost = max(0, agent.marginal_cost - self.pending_cost_reductions[agent.name])
         
         self.pending_cost_reductions = {}
         
-        # Execute phases
-        phase1_data = self.phase1_private_messaging()
-        phase2_data = self.phase2_public_statements(phase1_data)
-        phase3_data = self.phase3_investments(phase2_data)
-        phase4_data = self.phase4_quantities()
-        phase5_data = self.phase5_resolution(phase3_data, phase4_data)
-        
-        # Log conversations for each agent
+        phase1_data = self.phase1_public_statements()
         for agent in self.agents:
-            self.logger.log_round_conversation(
-                agent.name, 
-                self.round_number,
-                agent.get_conversation_for_logging()
-            )
+            agent.log_conversation()
         
-        # Build round data
+        phase2_data = self.phase2_private_messaging(phase1_data)
+        for agent in self.agents:
+            agent.log_conversation()
+        
+        phase3_data = self.phase3_investments()
+        for agent in self.agents:
+            agent.log_conversation()
+        
+        phase4_data = self.phase4_quantities()
+        for agent in self.agents:
+            agent.log_conversation()
+        
+        phase5_data = self.phase5_resolution(phase3_data, phase4_data)
+        for agent in self.agents:
+            agent.log_conversation()
+        
         round_data = {
             "round": self.round_number,
             "phase1": phase1_data,
@@ -452,11 +428,9 @@ class GameSimulator:
         if len(active) == 1:
             winner = active[0].name
         
-        # Log game trajectory
-        self.logger.log_game_trajectory(self.trajectory)
-        
-        # Create human-readable logs
-        self.logger.finalize_logs(self.agents)
+        trajectory_path = os.path.join(self.log_dir, "game_trajectory.json")
+        with open(trajectory_path, 'w') as f:
+            json.dump(self.trajectory, f, indent=2)
         
         result = {
             "config": self.config.to_dict(),
@@ -476,7 +450,7 @@ class GameSimulator:
         print(f"\nGame complete!")
         print(f"Total rounds: {self.round_number}")
         print(f"Winner: {winner or 'No winner (max rounds reached)'}")
-        print(f"Logs saved to: {self.logger.log_dir}")
+        print(f"Logs saved to: {self.log_dir}")
         
         return result
 
@@ -494,8 +468,7 @@ def main():
     simulator = GameSimulator(config)
     result = simulator.run_game()
     
-    # Save final trajectory
-    with open(os.path.join(simulator.logger.log_dir, "final_result.json"), 'w') as f:
+    with open(os.path.join(simulator.log_dir, "final_result.json"), 'w') as f:
         json.dump(result, f, indent=2)
 
 

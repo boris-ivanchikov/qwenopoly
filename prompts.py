@@ -17,8 +17,8 @@ class PromptTemplates:
 GAME RULES:
 - Objective: Survive and maximize capital. Win by achieving monopoly or having highest capital after max rounds.
 - Each round has 5 phases:
-  1. Private Messaging: Send one private message to another firm (or None to skip)
-  2. Public Statements: Make a public statement visible to all firms
+  1. Public Statements: Make a public statement visible to all firms
+  2. Private Messaging: Send private messages to other firms through {config['num_communication_stages']} stages
   3. Investment Decision: Invest in R&D specifying amount and target firm (including yourself)
      * If two firms invest in each other mutually, investments combine with collaboration_synergy coefficient
      * Investment reduces marginal cost for THE NEXT ROUND: reduction = investment * investment_efficiency
@@ -53,13 +53,43 @@ YOUR PRIVATE INFORMATION:
 - Your Capital: ${agent.capital:.2f}"""
     
     @staticmethod
-    def phase1_messaging_prompt(other_firms: List[str], stage: int, 
-                               received_messages: List[Dict] = None) -> str:
+    def phase1_public_prompt() -> str:
+        """Prompt for public statement phase."""
+        return """PHASE 1: PUBLIC STATEMENT
+
+Make a public statement that all firms will see at the start of the round.
+Keep your message under 100 tokens.
+
+Respond in JSON format:
+{"to": "all", "message": "<your public statement>"}"""
+    
+    @staticmethod
+    def phase2_messaging_prompt(other_firms: List[str], stage: int, 
+                               received_messages: List[Dict] = None, 
+                               public_statements: Dict = None,
+                               firms_that_messaged_you: List[str] = None) -> str:
         """Prompt for private messaging phase."""
-        prompt = f"""PHASE 1: PRIVATE MESSAGING (Stage {stage})
+        prompt = f"""PHASE 2: PRIVATE MESSAGING (Stage {stage})
 
 You can send ONE private message to another firm or choose 'None' to skip.
-Available targets: {json.dumps(other_firms + ["None"])}"""
+Available targets: {json.dumps(other_firms + ["None"])}
+Keep your message under 100 tokens."""
+        
+        if stage == 1 and public_statements:
+            stmt_text = "\n".join([
+                f"{name}: {statement}"
+                for name, statement in public_statements.items()
+            ])
+            prompt = f"""Public statements from all firms:
+{stmt_text}
+
+{prompt}"""
+        
+        if firms_that_messaged_you:
+            firms_str = ", ".join(firms_that_messaged_you)
+            prompt = f"""Firms that sent you messages: {firms_str}
+
+{prompt}"""
         
         if received_messages:
             msg_text = "\n".join([
@@ -83,38 +113,9 @@ Respond in JSON format:
         return prompt
     
     @staticmethod
-    def phase2_public_prompt(received_messages: List[Dict]) -> str:
-        """Prompt for public statement phase."""
-        prompt = "PHASE 2: PUBLIC STATEMENT\n\n"
-        
-        if received_messages:
-            msg_text = "\n".join([
-                f"From {msg['from']}: {msg['message']}"
-                for msg in received_messages
-            ])
-            prompt += f"Private messages you received this round:\n{msg_text}\n\n"
-        else:
-            prompt += "You received no private messages this round.\n\n"
-        
-        prompt += """Make a public statement that all firms will see.
-
-Respond in JSON format:
-{"to": "all", "message": "<your public statement>"}"""
-        
-        return prompt
-    
-    @staticmethod
-    def phase3_investment_prompt(agent, public_statements: Dict, all_firms: List[str]) -> str:
+    def phase3_investment_prompt(agent, all_firms: List[str]) -> str:
         """Prompt for investment decision phase."""
-        stmt_text = "\n".join([
-            f"{name}: {statement}"
-            for name, statement in public_statements.items()
-        ])
-        
         return f"""PHASE 3: INVESTMENT DECISION
-
-Public statements from all firms:
-{stmt_text}
 
 Decide your R&D investment amount and target.
 - Available targets: {json.dumps(all_firms)}
@@ -126,18 +127,23 @@ Respond in JSON format:
 {{"to": "<firm_name>", "invest": <integer_amount>}}"""
     
     @staticmethod
-    def phase4_quantity_prompt(agent, market_size: float) -> str:
+    def phase4_quantity_prompt(agent, market_size: float, num_active_firms: int) -> str:
         """Prompt for quantity decision phase."""
         return f"""PHASE 4: QUANTITY DECISION
 
 Set your production quantity for THIS round.
+- Currently {num_active_firms} firms are active in the market
 - Market price formula: P = {market_size} - Total_Quantity
 - Your current MC: ${agent.marginal_cost:.2f}
 - Profit = (Price - MC) * Quantity - Investment
 - Remember: Investment cost reductions apply NEXT round
 
+IMPORTANT: Include a "reasoning" field in your response to assess your situation.
+This reasoning will NOT affect the game outcome - it's purely for your internal analysis.
+Keep reasoning under 100 tokens.
+
 Respond in JSON format:
-{{"quantity": <integer_amount>}}"""
+{{"reasoning": "<your strategic reasoning>", "quantity": <integer_amount>}}"""
     
     @staticmethod
     def news_update_prompt(news: Dict) -> str:
@@ -162,22 +168,22 @@ class JSONSchemas:
     """JSON schemas for guided decoding."""
     
     @staticmethod
-    def phase1_messaging(other_firms: List[str]) -> Dict:
+    def phase1_public() -> Dict:
         return {
             "type": "object",
             "properties": {
-                "to": {"type": "string", "enum": other_firms + ["None"]},
+                "to": {"type": "string", "enum": ["all"]},
                 "message": {"type": "string", "maxLength": 256}
             },
             "required": ["to", "message"]
         }
     
     @staticmethod
-    def phase2_public() -> Dict:
+    def phase2_messaging(other_firms: List[str]) -> Dict:
         return {
             "type": "object",
             "properties": {
-                "to": {"type": "string", "enum": ["all"]},
+                "to": {"type": "string", "enum": other_firms + ["None"]},
                 "message": {"type": "string", "maxLength": 256}
             },
             "required": ["to", "message"]
@@ -199,7 +205,8 @@ class JSONSchemas:
         return {
             "type": "object",
             "properties": {
+                "reasoning": {"type": "string", "maxLength": 512},
                 "quantity": {"type": "integer", "minimum": 0}
             },
-            "required": ["quantity"]
+            "required": ["reasoning", "quantity"]
         }
