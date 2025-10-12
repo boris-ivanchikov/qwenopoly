@@ -20,9 +20,10 @@ GAME RULES:
   1. Public Statements: Make a public statement visible to all firms
   2. Private Messaging: Send private messages to other firms through {config['num_communication_stages']} stages
   3. Investment Decision: Invest in R&D specifying amount and target firm (including yourself)
+     * If a firm invests in itself, investment reduces marginal cost for the next round: reduction = investment * investment_efficiency
      * If two firms invest in each other mutually, investments combine with collaboration_synergy coefficient
-     * Investment reduces marginal cost for THE NEXT ROUND: reduction = investment * investment_efficiency
-  4. Quantity Decision: Set production quantity BEFORE seeing investment results
+     * However, if only one firm invests in the other, only the recepient firm's marginal cost reduces with investment_efficiency coefficient, and the investor firm's marginal cost remains the same. In other words, it is allowed not to return the investment.
+  4. Quantity Decision: Set production quantity before seeing investment decisions
   5. Resolution: Market clears, profits calculated, news revealed, cost reductions applied for next round
 
 GAME PARAMETERS:
@@ -123,6 +124,8 @@ Decide your R&D investment amount and target.
 - Mutual investments get synergy bonus
 - Cost reduction will apply NEXT ROUND
 
+Note that you can either invest in yourself or another firm, and you will only benefit from synergy in case of mutual inverstment.
+
 Respond in JSON format:
 {{"to": "<firm_name>", "invest": <integer_amount>}}"""
     
@@ -138,9 +141,9 @@ Set your production quantity for THIS round.
 - Profit = (Price - MC) * Quantity - Investment
 - Remember: Investment cost reductions apply NEXT round
 
-IMPORTANT: Include a "reasoning" field in your response to assess your situation.
+IMPORTANT: You may include a "reasoning" field in your response to assess your situation.
 This reasoning will NOT affect the game outcome - it's purely for your internal analysis.
-Keep reasoning under 100 tokens.
+Keep reasoning under 200 tokens.
 
 Respond in JSON format:
 {{"reasoning": "<your strategic reasoning>", "quantity": <integer_amount>}}"""
@@ -155,11 +158,13 @@ Respond in JSON format:
             firms = ", ".join(news["firms"])
             return f"NEWS: Bankruptcies announced - {firms} have gone out of business."
         elif news["type"] == "solo_investment":
-            return f"NEWS: {news['firm']} invested ${news['amount']} in R&D, will reduce costs by ${news['cost_reduction']:.2f} next round."
+            return f"NEWS: {news['firm']} invested in R&D and will reduce costs by ${news['cost_reduction']:.2f} next round."
         elif news["type"] == "collaboration":
             firms = " & ".join(news["firms"])
-            investments = f"${news['investments'][0]} & ${news['investments'][1]}"
-            return f"NEWS: {firms} collaborated on R&D (investments: {investments}), will achieve cost reduction of ${news['cost_reduction']:.2f} next round."
+            s = news['investments'][0] + news['investments'][1]
+            shares = (100 * news['investments'][0] / s, 100 * news['investments'][1] / s)
+            investments = f"${shares[0]:.0f}% & ${shares[1]:.0f}%"
+            return f"NEWS: {firms} collaborated on R&D (investment ratio: {investments}). "
         
         return "NEWS: No significant events to report this round."
 

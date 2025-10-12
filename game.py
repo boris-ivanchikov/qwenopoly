@@ -16,26 +16,27 @@ from prompts import PromptTemplates, JSONSchemas
 @dataclass
 class GameConfig:
     """Game configuration parameters."""
-    num_firms: int = 5
-    max_rounds: int = 10
-    num_communication_stages: int = 2
-    initial_capital_range: tuple = (300.0, 500.0)
-    initial_mc_range: tuple = (10.0, 30.0)
-    market_size: float = 100.0
-    collaboration_synergy: float = 1.5
-    investment_efficiency: float = 0.05
+    num_firms: int
+    max_rounds: int
+    num_communication_stages: int
+    initial_capital_range: tuple
+    initial_mc_range: tuple
+    market_size: float
+    collaboration_synergy: float
+    investment_efficiency: float
+    max_message_tokens: int
+    firm_names: Optional[List[str]] = None
     model_name: str = "Qwen/Qwen3-30B-A3B-Instruct-2507"
     num_gpus: int = 4
-    max_message_tokens: int = 256
-    firm_names: List[str] = None
     
     def __post_init__(self):
         if self.firm_names is None:
             self.firm_names = [
                 "Adam", "Bayes", "Cluster", "Data", "Epoch", 
                 "Forward", "Gradient", "Heuristic", "Intelligence", 
-                "Jacobi", "Kernel", "Lambda", "Matrix", "Neuron", "Pipeline"
-            ]
+                "Jacobi", "Kernel", "Lambda", "Matrix", "Neuron", "Pipeline",
+                "Queue", "Robot", "Sequence", "Tensor", "User", "Vector", "Weight", "Xavier", "Yandex", "ZeRO"
+            ][:self.num_firms]
     
     def to_dict(self) -> Dict:
         """Convert to dictionary for prompt templates."""
@@ -63,7 +64,7 @@ class GameSimulator:
     
     def initialize_agents(self):
         """Initialize agent firms with random parameters."""
-        selected_names = self.config.firm_names[:self.config.num_firms]
+        selected_names = self.config.firm_names
         
         for i, name in enumerate(selected_names):
             mc = random.uniform(*self.config.initial_mc_range)
@@ -93,6 +94,12 @@ class GameSimulator:
         """Get names of other active agents."""
         active = self.get_active_agents()
         return [a.name for a in active if a.id != agent.id]
+    
+    def log_trajectory(self):
+        """Save the current game trajectory to file."""
+        trajectory_path = os.path.join(self.log_dir, "game_trajectory.json")
+        with open(trajectory_path, 'w') as f:
+            json.dump(self.trajectory, f, indent=2)
     
     def phase1_public_statements(self) -> Dict:
         """Execute public statement phase."""
@@ -371,6 +378,9 @@ class GameSimulator:
         
         self.pending_cost_reductions = {}
         
+        round_data = {"round": self.round_number}
+        self.trajectory.append(round_data)
+        
         phase1_data = self.phase1_public_statements()
         for agent in self.agents:
             agent.log_conversation()
@@ -382,16 +392,31 @@ class GameSimulator:
         phase3_data = self.phase3_investments()
         for agent in self.agents:
             agent.log_conversation()
+        self.trajectory[-1]["investments"] = phase3_data["investments"]
+        self.log_trajectory()
         
         phase4_data = self.phase4_quantities()
         for agent in self.agents:
             agent.log_conversation()
+        self.trajectory[-1]["quantities"] = phase4_data["quantities"]
+        self.log_trajectory()
         
         phase5_data = self.phase5_resolution(phase3_data, phase4_data)
         for agent in self.agents:
             agent.log_conversation()
+        self.trajectory[-1].update({
+            "collaborations": phase5_data["collaborations"],
+            "solo_investments": phase5_data["solo_investments"],
+            "market_price": phase5_data["market_price"],
+            "total_quantity": phase5_data["total_quantity"],
+            "profits": phase5_data["profits"],
+            "bankruptcies": phase5_data["bankruptcies"],
+            "news": phase5_data["news"],
+            "firm_states": phase5_data["firm_states"]
+        })
+        self.log_trajectory()
         
-        round_data = {
+        return {
             "round": self.round_number,
             "phase1": phase1_data,
             "phase2": phase2_data,
@@ -399,9 +424,6 @@ class GameSimulator:
             "phase4": phase4_data,
             "phase5": phase5_data
         }
-        
-        self.trajectory.append(round_data)
-        return round_data
     
     def is_game_over(self) -> bool:
         """Check if the game should end."""
@@ -427,10 +449,6 @@ class GameSimulator:
         active = self.get_active_agents()
         if len(active) == 1:
             winner = active[0].name
-        
-        trajectory_path = os.path.join(self.log_dir, "game_trajectory.json")
-        with open(trajectory_path, 'w') as f:
-            json.dump(self.trajectory, f, indent=2)
         
         result = {
             "config": self.config.to_dict(),

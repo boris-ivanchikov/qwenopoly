@@ -18,10 +18,11 @@ def main():
     config = GameConfig(
         num_firms=5,
         max_rounds=5,
-        initial_capital_range=(100.0, 300.0),
-        initial_mc_range=(10.0, 30.0),
+        num_communication_stages=3,
+        initial_capital_range=(150.0, 300.0),
+        initial_mc_range=(2.0, 5.0),
         market_size=300.0,
-        collaboration_synergy=1.5,
+        collaboration_synergy=2.0,
         investment_efficiency=0.1,
         max_message_tokens=256,
         num_gpus=4

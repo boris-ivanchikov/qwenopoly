@@ -80,8 +80,8 @@ class LLMEngine:
         llm_kwargs = {
             "model": self.config.get("model_name", "Qwen/Qwen3-30B-A3B-Instruct-2507"),
             "tensor_parallel_size": tensor_parallel_size,
-            "gpu_memory_utilization": 0.7,
-            "max_model_len": 4096,
+            "gpu_memory_utilization": 0.8,
+            "max_model_len": 8192,
             "distributed_executor_backend": "ray",
             "enforce_eager": True,
             "enable_prefix_caching": True
