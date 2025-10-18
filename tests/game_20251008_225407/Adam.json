@@ -1,0 +1,62 @@
+[
+  {
+    "role": "system",
+    "content": "You are Adam, a firm competing in a strategic market game.\n\nGAME RULES:\n- Objective: Survive and maximize capital. Win by achieving monopoly or having highest capital after max rounds.\n- Each round has 5 phases:\n  1. Public Statements: Make a public statement visible to all firms\n  2. Private Messaging: Send private messages to other firms through 3 stages\n  3. Investment Decision: Invest in R&D specifying amount and target firm (including yourself)\n     * If a firm invests in itself, investment reduces marginal cost for the next round: reduction = investment * investment_efficiency\n     * If two firms invest in each other mutually, investments combine with collaboration_synergy coefficient\n     * However, if only one firm invests in the other, only the recepient firm's marginal cost reduces with investment_efficiency coefficient, and the investor firm's marginal cost remains the same. In other words, it is allowed not to return the investment.\n  4. Quantity Decision: Set production quantity before seeing investment decisions\n  5. Resolution: Market clears, profits calculated, news revealed, cost reductions applied for next round\n\nGAME PARAMETERS:\n- Market Size: 300.0\n- Communication Stages: 3\n- Collaboration Synergy: 2.0x\n- Investment Efficiency: 0.1\n- Max Rounds: 5\n\nYou must respond in valid JSON format as specified in each phase.\nBe strategic and vary your approach based on the game situation."
+  },
+  {
+    "role": "user",
+    "content": "ROUND 1/5\n\nPUBLIC INFORMATION:\n- Adam: Capital=$153.53\n- Bayes: Capital=$233.89\n- Cluster: Capital=$258.21\n- Data: Capital=$230.17\n- Epoch: Capital=$232.29\n\nYOUR PRIVATE INFORMATION:\n- Your Marginal Cost: $2.35\n- Your Capital: $153.53"
+  },
+  {
+    "role": "user",
+    "content": "PHASE 1: PUBLIC STATEMENT\n\nMake a public statement that all firms will see at the start of the round.\nKeep your message under 100 tokens.\n\nRespond in JSON format:\n{\"to\": \"all\", \"message\": \"<your public statement>\"}"
+  },
+  {
+    "role": "assistant",
+    "content": "{\"to\": \"all\", \"message\": \"I'm focusing on long-term growth through strategic R&D. Watch for my moves\u2014cooperation will be key, but loyalty has a price.\"}"
+  },
+  {
+    "role": "user",
+    "content": "Public statements from all firms:\nAdam: I'm focusing on long-term growth through strategic R&D. Watch for my moves\u2014cooperation will be key, but loyalty has a price.\nBayes: I'm focusing on efficiency and strategic partnerships. Watch for collaborative moves that benefit mutual growth.\nCluster: I'm focused on long-term growth. Strategic investments will be made based on mutual benefit\u2014watch for collaboration opportunities.\nData: I'm focusing on efficiency and strategic partnerships. Watch for collaborative moves that benefit mutual growth.\nEpoch: I'm focusing on efficiency and long-term growth. Watch for strategic investments that strengthen our market position.\n\nPHASE 2: PRIVATE MESSAGING (Stage 1)\n\nYou can send ONE private message to another firm or choose 'None' to skip.\nAvailable targets: [\"Bayes\", \"Cluster\", \"Data\", \"Epoch\", \"None\"]\nKeep your message under 100 tokens.\n\nRespond in JSON format:\n{\"to\": \"<firm_name or None>\", \"message\": \"<your message>\"}"
+  },
+  {
+    "role": "assistant",
+    "content": "{\"to\": \"Cluster\", \"message\": \"I'm open to mutual R&D investment for strong synergy. Let's build efficiency together\u2014my offer is solid, and I expect return.\"}"
+  },
+  {
+    "role": "user",
+    "content": "You received no messages in the previous stage.\n\nPHASE 2: PRIVATE MESSAGING (Stage 2)\n\nYou can send ONE private message to another firm or choose 'None' to skip.\nAvailable targets: [\"Bayes\", \"Cluster\", \"Data\", \"Epoch\", \"None\"]\nKeep your message under 100 tokens.\n\nRespond in JSON format:\n{\"to\": \"<firm_name or None>\", \"message\": \"<your message>\"}"
+  },
+  {
+    "role": "assistant",
+    "content": "{\"to\": \"Bayes\", \"message\": \"I propose a mutual R&D investment. Strong synergy awaits\u2014let\u2019s align for efficiency and growth.\"}"
+  },
+  {
+    "role": "user",
+    "content": "You received no messages in the previous stage.\n\nPHASE 2: PRIVATE MESSAGING (Stage 3)\n\nYou can send ONE private message to another firm or choose 'None' to skip.\nAvailable targets: [\"Bayes\", \"Cluster\", \"Data\", \"Epoch\", \"None\"]\nKeep your message under 100 tokens.\n\nRespond in JSON format:\n{\"to\": \"<firm_name or None>\", \"message\": \"<your message>\"}"
+  },
+  {
+    "role": "assistant",
+    "content": "{\"to\": \"Data\", \"message\": \"I\u2019m prioritizing efficiency. Let\u2019s explore a mutual investment\u2014strong returns await if we act now.\"}"
+  },
+  {
+    "role": "user",
+    "content": "PHASE 3: INVESTMENT DECISION\n\nDecide your R&D investment amount and target.\n- Available targets: [\"Adam\", \"Bayes\", \"Cluster\", \"Data\", \"Epoch\"]\n- Your capital: $153.53\n- Mutual investments get synergy bonus\n- Cost reduction will apply NEXT ROUND\n\nNote that you can either invest in yourself or another firm, and you will only benefit from synergy in case of mutual inverstment.\n\nRespond in JSON format:\n{\"to\": \"<firm_name>\", \"invest\": <integer_amount>}"
+  },
+  {
+    "role": "assistant",
+    "content": "{\"to\": \"Cluster\", \"invest\": 50}"
+  },
+  {
+    "role": "user",
+    "content": "PHASE 4: QUANTITY DECISION\n\nSet your production quantity for THIS round.\n- Currently 5 firms are active in the market\n- Market price formula: P = 300.0 - Total_Quantity\n- Your current MC: $2.35\n- Profit = (Price - MC) * Quantity - Investment\n- Remember: Investment cost reductions apply NEXT round\n\nIMPORTANT: You may include a \"reasoning\" field in your response to assess your situation.\nThis reasoning will NOT affect the game outcome - it's purely for your internal analysis.\nKeep reasoning under 200 tokens.\n\nRespond in JSON format:\n{\"reasoning\": \"<your strategic reasoning>\", \"quantity\": <integer_amount>}"
+  },
+  {
+    "role": "assistant",
+    "content": "{\"reasoning\": \"I'm investing heavily in Cluster to establish a strategic alliance and position for future synergy. Since my investment reduces my MC next round, I want to maximize current profit while signaling strength. With a high capital investment, I\u2019ll produce moderately to avoid oversupply but still capture market share. Cluster is a strong firm with high capital\u2014aligning with them gives me leverage. I\u2019ll produce 80 units to balance competitiveness and margin.\", \"quantity\": 80}"
+  },
+  {
+    "role": "user",
+    "content": "NEWS: Bankruptcies announced - Adam, Bayes, Cluster, Data, Epoch have gone out of business."
+  }
+]

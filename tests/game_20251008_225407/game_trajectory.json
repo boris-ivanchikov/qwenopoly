@@ -1,0 +1,288 @@
+[
+  {
+    "round": 1,
+    "phase1": {
+      "public_statements": {
+        "Adam": "I'm focusing on long-term growth through strategic R&D. Watch for my moves\u2014cooperation will be key, but loyalty has a price.",
+        "Bayes": "I'm focusing on efficiency and strategic partnerships. Watch for collaborative moves that benefit mutual growth.",
+        "Cluster": "I'm focused on long-term growth. Strategic investments will be made based on mutual benefit\u2014watch for collaboration opportunities.",
+        "Data": "I'm focusing on efficiency and strategic partnerships. Watch for collaborative moves that benefit mutual growth.",
+        "Epoch": "I'm focusing on efficiency and long-term growth. Watch for strategic investments that strengthen our market position."
+      }
+    },
+    "phase2": {
+      "stages": [
+        [
+          {
+            "from": "Adam",
+            "to": "Cluster",
+            "message": "I'm open to mutual R&D investment for strong synergy. Let's build efficiency together\u2014my offer is solid, and I expect return."
+          },
+          {
+            "from": "Bayes",
+            "to": "Cluster",
+            "message": "I propose a mutual investment to boost efficiency. Let\u2019s align on R&D\u2014your strength in growth and my focus on efficiency can create strong synergy. I\u2019ll match your investment if you commit."
+          },
+          {
+            "from": "Cluster",
+            "to": "Bayes",
+            "message": "I see potential in a mutual R&D push. Let\u2019s align on investment\u2014my efficiency is strong, and synergy could be powerful. Reply if interested."
+          },
+          {
+            "from": "Data",
+            "to": "Bayes",
+            "message": "I see alignment in our public stance. Let's explore mutual R&D investment\u2014efficient collaboration could give us a strong edge."
+          },
+          {
+            "from": "Epoch",
+            "to": "Cluster",
+            "message": "I propose a mutual investment to boost our efficiency. I'll invest in you, and if you return the favor, we can unlock synergy. Let's dominate this round together."
+          }
+        ],
+        [
+          {
+            "from": "Adam",
+            "to": "Bayes",
+            "message": "I propose a mutual R&D investment. Strong synergy awaits\u2014let\u2019s align for efficiency and growth."
+          },
+          {
+            "from": "Bayes",
+            "to": "Cluster",
+            "message": "Confirmed\u2014let\u2019s go mutual. I\u2019ll invest in you, and I expect your investment in me. Let\u2019s maximize synergy and set a strong lead."
+          },
+          {
+            "from": "Cluster",
+            "to": "Bayes",
+            "message": "I accept your proposal. Let\u2019s commit mutually\u2014equal investment now, synergy locked in. I\u2019ll match your move and drive efficiency together."
+          },
+          {
+            "from": "Data",
+            "to": "Cluster",
+            "message": "Your focus on long-term growth matches mine. Let\u2019s consider a mutual R&D push\u2014synergy could unlock strong cost advantages."
+          },
+          {
+            "from": "Epoch",
+            "to": "Bayes",
+            "message": "I\u2019m open to a mutual investment for synergy. If we both invest in each other, we can significantly reduce costs. Let\u2019s build a strong foundation together."
+          }
+        ],
+        [
+          {
+            "from": "Adam",
+            "to": "Data",
+            "message": "I\u2019m prioritizing efficiency. Let\u2019s explore a mutual investment\u2014strong returns await if we act now."
+          },
+          {
+            "from": "Bayes",
+            "to": "Cluster",
+            "message": "Finalizing mutual investment\u2014let\u2019s lock in synergy. I\u2019m committed, and I expect your full alignment to maximize our edge."
+          },
+          {
+            "from": "Cluster",
+            "to": "Data",
+            "message": "I\u2019m open to mutual R&D\u2014let\u2019s align for synergy. I\u2019ll invest in you if you commit to investing in me. Let\u2019s build efficiency together."
+          },
+          {
+            "from": "Data",
+            "to": "Epoch",
+            "message": "Mutual R&D investment could position us strongly. I'm open to a collaboration\u2014let\u2019s drive efficiency together."
+          },
+          {
+            "from": "Epoch",
+            "to": "Data",
+            "message": "I\u2019m considering a strategic investment. If you\u2019re open to mutual support, let\u2019s align for efficiency and shared growth. No pressure\u2014just opportunity."
+          }
+        ]
+      ],
+      "final_messages_per_agent": {
+        "Adam": [],
+        "Bayes": [
+          {
+            "from": "Cluster",
+            "message": "I see potential in a mutual R&D push. Let\u2019s align on investment\u2014my efficiency is strong, and synergy could be powerful. Reply if interested."
+          },
+          {
+            "from": "Data",
+            "message": "I see alignment in our public stance. Let's explore mutual R&D investment\u2014efficient collaboration could give us a strong edge."
+          },
+          {
+            "from": "Adam",
+            "message": "I propose a mutual R&D investment. Strong synergy awaits\u2014let\u2019s align for efficiency and growth."
+          },
+          {
+            "from": "Cluster",
+            "message": "I accept your proposal. Let\u2019s commit mutually\u2014equal investment now, synergy locked in. I\u2019ll match your move and drive efficiency together."
+          },
+          {
+            "from": "Epoch",
+            "message": "I\u2019m open to a mutual investment for synergy. If we both invest in each other, we can significantly reduce costs. Let\u2019s build a strong foundation together."
+          }
+        ],
+        "Cluster": [
+          {
+            "from": "Adam",
+            "message": "I'm open to mutual R&D investment for strong synergy. Let's build efficiency together\u2014my offer is solid, and I expect return."
+          },
+          {
+            "from": "Bayes",
+            "message": "I propose a mutual investment to boost efficiency. Let\u2019s align on R&D\u2014your strength in growth and my focus on efficiency can create strong synergy. I\u2019ll match your investment if you commit."
+          },
+          {
+            "from": "Epoch",
+            "message": "I propose a mutual investment to boost our efficiency. I'll invest in you, and if you return the favor, we can unlock synergy. Let's dominate this round together."
+          },
+          {
+            "from": "Bayes",
+            "message": "Confirmed\u2014let\u2019s go mutual. I\u2019ll invest in you, and I expect your investment in me. Let\u2019s maximize synergy and set a strong lead."
+          },
+          {
+            "from": "Data",
+            "message": "Your focus on long-term growth matches mine. Let\u2019s consider a mutual R&D push\u2014synergy could unlock strong cost advantages."
+          },
+          {
+            "from": "Bayes",
+            "message": "Finalizing mutual investment\u2014let\u2019s lock in synergy. I\u2019m committed, and I expect your full alignment to maximize our edge."
+          }
+        ],
+        "Data": [
+          {
+            "from": "Adam",
+            "message": "I\u2019m prioritizing efficiency. Let\u2019s explore a mutual investment\u2014strong returns await if we act now."
+          },
+          {
+            "from": "Cluster",
+            "message": "I\u2019m open to mutual R&D\u2014let\u2019s align for synergy. I\u2019ll invest in you if you commit to investing in me. Let\u2019s build efficiency together."
+          },
+          {
+            "from": "Epoch",
+            "message": "I\u2019m considering a strategic investment. If you\u2019re open to mutual support, let\u2019s align for efficiency and shared growth. No pressure\u2014just opportunity."
+          }
+        ],
+        "Epoch": [
+          {
+            "from": "Data",
+            "message": "Mutual R&D investment could position us strongly. I'm open to a collaboration\u2014let\u2019s drive efficiency together."
+          }
+        ]
+      }
+    },
+    "phase3": {
+      "investments": {
+        "Adam": {
+          "target": "Cluster",
+          "amount": 50
+        },
+        "Bayes": {
+          "target": "Cluster",
+          "amount": 50
+        },
+        "Cluster": {
+          "target": "Bayes",
+          "amount": 100
+        },
+        "Data": {
+          "target": "Bayes",
+          "amount": 50
+        },
+        "Epoch": {
+          "target": "Epoch",
+          "amount": 100
+        }
+      }
+    },
+    "phase4": {
+      "quantities": {
+        "Adam": 80,
+        "Bayes": 65,
+        "Cluster": 50,
+        "Data": 65,
+        "Epoch": 65
+      }
+    },
+    "phase5": {
+      "collaborations": [
+        {
+          "firms": [
+            "Bayes",
+            "Cluster"
+          ],
+          "investments": [
+            50,
+            100
+          ],
+          "cost_reduction": 30.0
+        }
+      ],
+      "solo_investments": [
+        {
+          "firm": "Adam",
+          "amount": 50,
+          "cost_reduction": 5.0
+        },
+        {
+          "firm": "Data",
+          "amount": 50,
+          "cost_reduction": 5.0
+        },
+        {
+          "firm": "Epoch",
+          "amount": 100,
+          "cost_reduction": 10.0
+        }
+      ],
+      "market_price": 0,
+      "total_quantity": 325,
+      "profits": {
+        "Adam": -188.33900899020892,
+        "Bayes": -277.77062005409863,
+        "Cluster": -208.22337471983724,
+        "Data": -265.9022104388213,
+        "Epoch": -237.79295632552154
+      },
+      "bankruptcies": [
+        "Adam",
+        "Bayes",
+        "Cluster",
+        "Data",
+        "Epoch"
+      ],
+      "news": {
+        "type": "bankruptcy",
+        "firms": [
+          "Adam",
+          "Bayes",
+          "Cluster",
+          "Data",
+          "Epoch"
+        ]
+      },
+      "firm_states": {
+        "Adam": {
+          "capital": -84.81340368505002,
+          "marginal_cost": 2.3542376123776116,
+          "is_active": false
+        },
+        "Bayes": {
+          "capital": -93.8778663122369,
+          "marginal_cost": 4.27339415467844,
+          "is_active": false
+        },
+        "Cluster": {
+          "capital": -50.013340310155456,
+          "marginal_cost": 4.164467494396745,
+          "is_active": false
+        },
+        "Data": {
+          "capital": -85.73158451202303,
+          "marginal_cost": 4.090803237520328,
+          "is_active": false
+        },
+        "Epoch": {
+          "capital": -105.49866704959854,
+          "marginal_cost": 3.658353174238793,
+          "is_active": false
+        }
+      }
+    }
+  }
+]
