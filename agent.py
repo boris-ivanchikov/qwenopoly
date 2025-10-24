@@ -1,33 +1,38 @@
-"""
-Agent module for handling LLM inference with vLLM.
-Uses LangChain for context management and OpenAI format for conversations.
-"""
-
 import os
 import json
+import random
 from typing import List, Dict, Optional, Any
-from dataclasses import dataclass, field
 from vllm import LLM, SamplingParams
 from vllm.sampling_params import GuidedDecodingParams
+from vllm.lora.request import LoRARequest
 from langchain.schema import BaseMessage, HumanMessage, AIMessage, SystemMessage
 
 
-@dataclass
 class Agent:
-    """Represents a firm agent with its own conversation history."""
+    """Represents a firm agent with its own conversation history and LoRA configuration."""
     
-    id: int
-    name: str
-    marginal_cost: float
-    capital: float
-    is_active: bool = True
-    initial_mc: float = 0.0
-    initial_capital: float = 0.0
-    conversation_history: List[BaseMessage] = field(default_factory=list)
-    log_filepath: Optional[str] = None
+    def __init__(
+        self,
+        id: int,
+        name: str,
+        marginal_cost: float,
+        capital: float,
+        lora_path: Optional[str] = None,
+    ):
+        self.id = id
+        self.name = name
+        self.marginal_cost = marginal_cost
+        self.capital = capital
+        self.initial_mc = marginal_cost
+        self.initial_capital = capital
+        self.is_active = True
+        self.conversation_history: List[BaseMessage] = []
+        self.log_filepath: Optional[str] = None
+        self.lora_path = lora_path
+        self.lora_seed = random.randint(0, 2**31 - 1)
     
     def add_message(self, role: str, content: str):
-        """Add a message to conversation history in OpenAI format."""
+        """Add a message to conversation history."""
         if role == "system":
             msg = SystemMessage(content=content)
         elif role == "user":
@@ -66,7 +71,7 @@ class Agent:
 
 
 class LLMEngine:
-    """Handles vLLM inference with shared base model."""
+    """Handles vLLM inference with LoRA adapter support."""
     
     def __init__(self, config: Dict[str, Any]):
         self.config = config
@@ -74,62 +79,72 @@ class LLMEngine:
         self.initialize_llm()
         
     def initialize_llm(self):
-        """Initialize the vLLM model with configuration."""
-        tensor_parallel_size = self.config.get("num_gpus", 4)
-        
+        """Initialize the vLLM model with LoRA support."""
         llm_kwargs = {
             "model": self.config.get("model_name", "Qwen/Qwen3-30B-A3B-Instruct-2507"),
-            "tensor_parallel_size": tensor_parallel_size,
+            "tensor_parallel_size": self.config.get("num_gpus", 4),
             "gpu_memory_utilization": 0.8,
             "max_model_len": 8192,
             "distributed_executor_backend": "ray",
             "enforce_eager": True,
-            "enable_prefix_caching": True
+            "enable_prefix_caching": True,
+            "enable_lora": True,
+            "max_lora_rank": 64,
+            "max_loras": 8
         }
         
         self.llm = LLM(**llm_kwargs)
     
     def generate(
-            self, 
-            agents: List[Agent], 
-            json_schema: Optional[Dict] = None,
-            max_tokens: int = 256
-        ) -> List[Dict[str, Any]]:
+        self, 
+        agents: List[Agent], 
+        json_schema: Dict,
+        max_tokens: int = 256
+    ) -> List[Dict[str, Any]]:
         """
-        Generate responses for multiple agents using chat format.
+        Generate responses for multiple agents with LoRA support.
         
         Args:
-            agents: List of Agent objects (conversation already added to their history)
+            agents: List of Agent objects with conversation history
             json_schema: Optional JSON schema for guided decoding
             max_tokens: Maximum tokens to generate
             
         Returns:
             List of response dictionaries with 'text' and 'json' (if applicable)
         """
-        conversations = []
-        for agent in agents:
-            conversations.append(agent.get_conversation_for_vllm())
+        conversations = [agent.get_conversation_for_vllm() for agent in agents]
         
         params_kwargs = {
-            "temperature": 0.9,
-            "top_p": 0.95,
-            "top_k": 50,
+            "temperature": 0,
             "max_tokens": max_tokens,
         }
         
-        if json_schema:
-            params_kwargs["guided_decoding"] = GuidedDecodingParams(json=json_schema)
+        params_kwargs["guided_decoding"] = GuidedDecodingParams(json=json_schema)
         
         sampling_params = SamplingParams(**params_kwargs)
+        
+        lora_requests = []
+        for agent in agents:
+            if agent.lora_path and agent.lora_seed is not None:
+                lora_requests.append(
+                    LoRARequest(
+                        lora_name=f"{agent.name}_seed_{agent.lora_seed}",
+                        lora_int_id=agent.lora_seed,
+                        lora_path=agent.lora_path
+                    )
+                )
+            else:
+                lora_requests.append(None)
         
         outputs = self.llm.chat(
             messages=conversations,
             sampling_params=sampling_params,
+            lora_request=lora_requests if any(lora_requests) else None,
             use_tqdm=True
         )
         
         responses = []
-        for output, agent in zip(outputs, agents):
+        for output in outputs:
             response_text = output.outputs[0].text.strip()
             response_data = {"text": response_text}
             
